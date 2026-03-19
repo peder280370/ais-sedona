@@ -75,10 +75,10 @@ class ValidatorTest {
                 pos(99_999_999L, 51.5, 2.3, 5.0f),  // invalid MMSI
                 pos(123456789L, 51.5, 2.3, 5.0f)     // valid
         );
-        Validator v = new Validator();
-        List<AisPosition> result = v.validate(input);
+        var v = new Validator();
+        var result = v.validate(input);
         assertEquals(1, result.size());
-        assertEquals(123456789L, result.get(0).getMmsi());
+        assertEquals(123456789L, result.getFirst().mmsi());
         assertEquals(1, v.getStats().invalidMmsi);
     }
 
@@ -88,8 +88,8 @@ class ValidatorTest {
                 pos(123456789L, 0.0, 0.0, 5.0f),  // null island
                 pos(234567890L, 55.0, 10.0, 5.0f) // valid
         );
-        Validator v = new Validator();
-        List<AisPosition> result = v.validate(input);
+        var v = new Validator();
+        var result = v.validate(input);
         assertEquals(1, result.size());
         assertEquals(1, v.getStats().nullIsland);
     }
@@ -100,8 +100,8 @@ class ValidatorTest {
                 pos(123456789L, 51.5, 2.3, 150.0f), // SOG too high
                 pos(234567890L, 55.0, 10.0, 12.0f)  // valid
         );
-        Validator v = new Validator();
-        List<AisPosition> result = v.validate(input);
+        var v = new Validator();
+        var result = v.validate(input);
         assertEquals(1, result.size());
         assertEquals(1, v.getStats().sogExceeded);
     }
@@ -114,8 +114,8 @@ class ValidatorTest {
                 pos(123456789L, ts, 51.5, 2.4),  // duplicate (same mmsi+ts)
                 pos(123456789L, Instant.parse("2024-01-15T10:05:00Z"), 51.4, 2.3) // different ts
         );
-        Validator v = new Validator();
-        List<AisPosition> result = v.validate(input);
+        var v = new Validator();
+        var result = v.validate(input);
         assertEquals(2, result.size());
         assertEquals(1, v.getStats().duplicates);
     }
@@ -125,8 +125,8 @@ class ValidatorTest {
         // heading=511 means "not available" — should be kept, not filtered
         AisPosition p = new AisPosition(123456789L, Instant.parse("2024-01-15T10:00:00Z"),
                 51.5, 2.3, 5.0f, 90.0f, 511, 0, 0.0f, 1);
-        Validator v = new Validator();
-        List<AisPosition> result = v.validate(List.of(p));
+        var v = new Validator();
+        var result = v.validate(List.of(p));
         assertEquals(1, result.size(), "heading=511 should be kept");
     }
 }

@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 AIS maritime data pipeline: ingest raw AIS data → write GeoParquet → query with Apache Sedona → visualize on a map.
 
 Three modules:
-- **`ais-io`** — ingestion pipeline (fat JAR, Java 11+)
-- **`ais-backend`** — REST API (Quarkus 3.9.5, Java 17)
+- **`ais-io`** — ingestion pipeline (fat JAR, Java 21)
+- **`ais-backend`** — REST API (Quarkus 3.32.1, Java 17)
 - **`ais-frontend`** — map UI (React 18 + OpenLayers 9 + TypeScript)
 
 ## Architecture
@@ -107,17 +107,17 @@ Voyage ID format: `<mmsi>_<start_epoch_seconds>`
 | NMEA parsing | `dk.tbsalling:aismessages` | 3.0.4 |
 | Geometry | `org.locationtech.jts:jts-core` | 1.20.0 |
 | H3 indexing | `com.uber:h3` | 4.1.1 |
-| Parquet | `org.apache.parquet:parquet-avro` | 1.14.1 |
-| Hadoop FS | `org.apache.hadoop:hadoop-client` | 3.4.1 |
+| Parquet | `org.apache.parquet:parquet-avro` | 1.15.2 |
+| Hadoop FS | `org.apache.hadoop:hadoop-client` | 3.4.3 |
 
 ### ais-backend (`pom.xml`)
 
 | Purpose | Artifact | Version |
 |---|---|---|
-| Framework | `io.quarkus:quarkus-rest` | 3.9.5 |
-| Spark Connect | `org.apache.spark:spark-connect-client-jvm_2.12` | 3.5.1 |
+| Framework | `io.quarkus:quarkus-rest` | 3.32.1 |
+| Spark Connect | `org.apache.spark:spark-connect-client-jvm_2.13` | 4.0.1 |
 | Pipeline | `dk.carolus:ais-io` | 1.0-SNAPSHOT |
-| Lombok | `org.projectlombok:lombok` | 1.18.38 |
+| Lombok | `org.projectlombok:lombok` | 1.18.44 |
 
 ### ais-frontend (`package.json`)
 
@@ -158,10 +158,10 @@ cd ais-frontend && npm ci && npm run build          # produces dist/
 ## Ingestion CLI
 
 ```bash
-./ais-io.sh input.nmea /data           # NMEA file
-./ais-io.sh input.csv /data            # CSV file (auto-detected)
-./ais-io.sh 2024-01-15 /data --format dma  # Download from aisdata.ais.dk
-./ais-io.sh input.nmea /data --limit 1000  # Sample first 1000 lines
+./ais-io/ais-io.sh input.nmea /data           # NMEA file
+./ais-io/ais-io.sh input.csv /data            # CSV file (auto-detected)
+./ais-io/ais-io.sh 2024-01-15 /data --format dma  # Download from aisdata.ais.dk
+./ais-io/ais-io.sh input.nmea /data --limit 1000  # Sample first 1000 lines
 ```
 
 ## Spark / Sedona Configuration
@@ -175,4 +175,4 @@ spark.sql.parquet.filterPushdown   true
 spark.sql.parquet.mergeSchema      false
 ```
 
-Sedona version in Docker: `sedona-spark-3.5_2.12:1.8.1`
+Sedona version in Docker: `apache/sedona:1.8.1` (Spark 4.0)

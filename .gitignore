@@ -27,8 +27,7 @@ Thumbs.db
 
 # Data
 *.parquet
-*.nmea
-ais-csv/aisdk-2026-03-14.zip
+*.zip
 
 # Logs
 *.log

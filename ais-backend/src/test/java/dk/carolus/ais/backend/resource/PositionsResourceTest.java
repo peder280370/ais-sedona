@@ -133,7 +133,7 @@ class PositionsResourceTest {
 
     @Test
     void getPositions_multipleResults_returnsAll() {
-        PositionRecord second = new PositionRecord(
+        var second = new PositionRecord(
             987654321L, "2024-01-15T09:00:00", "POINT (10.0 55.0)",
             5.0f, 90.0f, null, 1, null, 18,
             null, null, null, null);

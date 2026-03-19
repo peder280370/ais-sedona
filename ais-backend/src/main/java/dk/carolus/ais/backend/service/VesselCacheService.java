@@ -44,9 +44,9 @@ public class VesselCacheService {
     void refresh() {
         try {
             List<VesselRecord> vessels = queryService.queryVessels(null, null);
-            Map<Long, VesselRecord> updated = new ConcurrentHashMap<>(vessels.size() * 2);
-            for (VesselRecord v : vessels) {
-                updated.put(v.getMmsi(), v);
+            var updated = new ConcurrentHashMap<Long, VesselRecord>(vessels.size() * 2);
+            for (var v : vessels) {
+                updated.put(v.mmsi(), v);
             }
             cache = updated;
             log.debug("Vessel cache refreshed: {} entries", updated.size());
@@ -61,12 +61,12 @@ public class VesselCacheService {
     }
 
     private PositionRecord enrichOne(PositionRecord p) {
-        VesselRecord v = cache.get(p.getMmsi());
+        VesselRecord v = cache.get(p.mmsi());
         if (v == null) return p;
         return new PositionRecord(
-            p.getMmsi(), p.getTs(), p.getGeomWkt(),
-            p.getSog(), p.getCog(), p.getHeading(), p.getNavStatus(), p.getRot(), p.getMsgType(),
-            v.getVesselName(), v.getShipType(), v.getShipTypeDesc(), v.getLengthM()
+            p.mmsi(), p.ts(), p.geomWkt(),
+            p.sog(), p.cog(), p.heading(), p.navStatus(), p.rot(), p.msgType(),
+            v.vesselName(), v.shipType(), v.shipTypeDesc(), v.lengthM()
         );
     }
 }

@@ -56,13 +56,13 @@ public class AisImportService {
 
         if ("nmea".equalsIgnoreCase(format)) {
             // NMEA files are typically much smaller — keep the batch path unchanged
-            NmeaParser parser = new NmeaParser();
-            NmeaParser.ParseResult result = parser.parse(inputStream, "upload", fallback);
-            List<AisPosition> positions = result.getPositions();
-            List<VesselMetadata> vessels = result.getVessels();
+            var parser = new NmeaParser();
+            var result = parser.parse(inputStream, "upload", fallback);
+            var positions = result.positions();
+            var vessels = result.vessels();
 
-            Validator validator = new Validator();
-            List<AisPosition> valid = validator.validate(positions);
+            var validator = new Validator();
+            var valid = validator.validate(positions);
 
             writeLock.lock();
             try {
@@ -72,9 +72,9 @@ public class AisImportService {
                 if (!vessels.isEmpty()) {
                     vesselRecords = new VesselMetadataWriter(outDir).write(vessels);
                 }
-                TrackBuilder.BuildResult trackResult = new TrackBuilder().build(valid);
-                if (!trackResult.getTracks().isEmpty()) {
-                    tracksBuilt = new TrackWriter(outDir).write(trackResult.getTracks());
+                var trackResult = new TrackBuilder().build(valid);
+                if (!trackResult.tracks().isEmpty()) {
+                    tracksBuilt = new TrackWriter(outDir).write(trackResult.tracks());
                 }
             } finally {
                 writeLock.unlock();
@@ -87,10 +87,10 @@ public class AisImportService {
             // Only downsampled positions are kept per MMSI for track building.
             writeLock.lock();
             try {
-                Validator validator = new Validator();
-                Map<Long, VesselMetadata> vesselMap = new HashMap<>();
-                Map<Long, List<AisPosition>> trackPositions = new HashMap<>();
-                Map<Long, Instant> lastKeptTs = new HashMap<>();
+                var validator = new Validator();
+                var vesselMap = new HashMap<Long, VesselMetadata>();
+                var trackPositions = new HashMap<Long, List<AisPosition>>();
+                var lastKeptTs = new HashMap<Long, Instant>();
 
                 try (GeoParquetWriter posWriter = new GeoParquetWriter(outDir)) {
                     try {
@@ -101,16 +101,16 @@ public class AisImportService {
                                         catch (IOException e) { throw new UncheckedIOException(e); }
                                         // Inline downsampling: accumulate only one position per
                                         // MMSI per TRACK_DOWNSAMPLE_SEC for track building
-                                        Instant last = lastKeptTs.get(pos.getMmsi());
-                                        if (last == null || Duration.between(last, pos.getTimestamp())
+                                        Instant last = lastKeptTs.get(pos.mmsi());
+                                        if (last == null || Duration.between(last, pos.timestamp())
                                                 .getSeconds() >= TRACK_DOWNSAMPLE_SEC) {
                                             trackPositions.computeIfAbsent(
-                                                    pos.getMmsi(), k -> new ArrayList<>()).add(pos);
-                                            lastKeptTs.put(pos.getMmsi(), pos.getTimestamp());
+                                                    pos.mmsi(), k -> new ArrayList<>()).add(pos);
+                                            lastKeptTs.put(pos.mmsi(), pos.timestamp());
                                         }
                                     }
                                 },
-                                vessel -> vesselMap.merge(vessel.getMmsi(), vessel,
+                                vessel -> vesselMap.merge(vessel.mmsi(), vessel,
                                         CsvParser::mergeMetadata)
                         );
                     } catch (UncheckedIOException e) {
@@ -124,9 +124,9 @@ public class AisImportService {
                             .write(new ArrayList<>(vesselMap.values()));
                 }
 
-                TrackBuilder.BuildResult trackResult = new TrackBuilder().buildFromGrouped(trackPositions);
-                if (!trackResult.getTracks().isEmpty()) {
-                    tracksBuilt = new TrackWriter(outDir).write(trackResult.getTracks());
+                var trackResult = new TrackBuilder().buildFromGrouped(trackPositions);
+                if (!trackResult.tracks().isEmpty()) {
+                    tracksBuilt = new TrackWriter(outDir).write(trackResult.tracks());
                 }
 
             } finally {
@@ -142,8 +142,8 @@ public class AisImportService {
         long start = System.currentTimeMillis();
         try (InputStream is = Main.openDmaInputStream(date, 0)) {
             ImportResult result = importFile(is, null, "csv", LocalDate.parse(date));
-            return new ImportResult(result.getPositionsWritten(), result.getVesselRecords(),
-                    result.getTracksBuilt(), System.currentTimeMillis() - start);
+            return new ImportResult(result.positionsWritten(), result.vesselRecords(),
+                    result.tracksBuilt(), System.currentTimeMillis() - start);
         }
     }
 }

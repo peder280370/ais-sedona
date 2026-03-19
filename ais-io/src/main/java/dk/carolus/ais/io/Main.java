@@ -67,7 +67,7 @@ public class Main {
         }
 
         String inputArg = args[0];
-        Path outputDir = Paths.get(args[1]);
+        var outputDir = Paths.get(args[1]);
 
         // Parse all optional flags first, before any path validation
         String format = null;
@@ -93,7 +93,7 @@ public class Main {
                 System.exit(1);
             }
         } else {
-            Path inputFile = Paths.get(inputArg);
+            var inputFile = Paths.get(inputArg);
             if (!Files.isRegularFile(inputFile)) {
                 log.error("Input file not found: {}", inputFile);
                 System.exit(1);
@@ -120,31 +120,31 @@ public class Main {
             if ("nmea".equals(format)) {
                 // --- NMEA path ---
                 log.info("--- Step 1: Parsing NMEA ---");
-                NmeaParser parser = new NmeaParser();
-                NmeaParser.ParseResult parsed = parser.parse(is, inputArg, fallbackTimestamp);
-                positions = parsed.getPositions();
-                vesselMetadata = parsed.getVessels();
+                var parser = new NmeaParser();
+                var parsed = parser.parse(is, inputArg, fallbackTimestamp);
+                positions = parsed.positions();
+                vesselMetadata = parsed.vessels();
 
             } else {
                 // --- CSV / DMA path ---
                 log.info("--- Step 1: Parsing CSV ---");
-                CsvParser parser = new CsvParser();
-                CsvParser.ParseResult parsed = parser.parseFull(is, inputArg);
-                positions = parsed.getPositions();
-                vesselMetadata = parsed.getVessels();
+                var parser = new CsvParser();
+                var parsed = parser.parseFull(is, inputArg);
+                positions = parsed.positions();
+                vesselMetadata = parsed.vessels();
             }
         }
 
         // Validate & deduplicate positions
         log.info("--- Step 2: Validating positions ---");
-        Validator validator = new Validator();
-        List<AisPosition> valid = validator.validate(positions);
+        var validator = new Validator();
+        var valid = validator.validate(positions);
 
         // Write positions GeoParquet (date + H3 partitioned)
         if (!valid.isEmpty()) {
             log.info("--- Step 3: Writing positions GeoParquet ---");
-            GeoParquetWriter posWriter = new GeoParquetWriter(outputDir);
-            long written = posWriter.write(valid);
+            var posWriter = new GeoParquetWriter(outputDir);
+            var written = posWriter.write(valid);
             log.info("Positions: {} records written", written);
         } else {
             log.warn("No valid position records — skipping positions write");
@@ -153,8 +153,8 @@ public class Main {
         // Write vessel metadata
         if (!vesselMetadata.isEmpty()) {
             log.info("--- Step 4: Writing vessel metadata ---");
-            VesselMetadataWriter vesselWriter = new VesselMetadataWriter(outputDir);
-            long written = vesselWriter.write(vesselMetadata);
+            var vesselWriter = new VesselMetadataWriter(outputDir);
+            var written = vesselWriter.write(vesselMetadata);
             log.info("Vessels: {} records written", written);
         } else {
             log.info("No vessel metadata records — position-only input");
@@ -162,15 +162,15 @@ public class Main {
 
         // Build and write voyage tracks
         log.info("--- Step 5: Building voyage tracks ---");
-        TrackBuilder trackBuilder = new TrackBuilder();
-        TrackBuilder.BuildResult trackResult = trackBuilder.build(valid);
+        var trackBuilder = new TrackBuilder();
+        var trackResult = trackBuilder.build(valid);
         log.info("Tracks: {} built, {} downsampled, {} skipped single-point",
-                trackResult.getTracks().size(),
-                trackResult.getDownsampledPositions(),
-                trackResult.getSkippedSinglePoint());
-        if (!trackResult.getTracks().isEmpty()) {
+                trackResult.tracks().size(),
+                trackResult.downsampledPositions(),
+                trackResult.skippedSinglePoint());
+        if (!trackResult.tracks().isEmpty()) {
             log.info("--- Step 5b: Writing tracks GeoParquet ---");
-            long written = new TrackWriter(outputDir).write(trackResult.getTracks());
+            var written = new TrackWriter(outputDir).write(trackResult.tracks());
             log.info("Tracks: {} records written", written);
         }
 
@@ -186,7 +186,7 @@ public class Main {
     public static InputStream openDmaInputStream(String date, int limit) throws IOException {
         String url = "http://aisdata.ais.dk/aisdk-" + date + ".zip";
         log.info("Downloading DMA AIS data from {}", url);
-        ZipInputStream zis = new ZipInputStream(URI.create(url).toURL().openStream());
+        var zis = new ZipInputStream(URI.create(url).toURL().openStream());
         ZipEntry entry;
         while ((entry = zis.getNextEntry()) != null) {
             if (!entry.isDirectory() && entry.getName().toLowerCase().endsWith(".csv")) {
@@ -208,8 +208,8 @@ public class Main {
      * non-blank lines are returned (header line counts toward the limit for CSV files).
      */
     static InputStream openInputStream(Path file, String format, int limit) throws IOException {
-        boolean isZip = file.getFileName().toString().toLowerCase().endsWith(".zip");
-        InputStream raw = isZip ? extractZipEntry(file, format) : Files.newInputStream(file);
+        var isZip = file.getFileName().toString().toLowerCase().endsWith(".zip");
+        var raw = isZip ? extractZipEntry(file, format) : Files.newInputStream(file);
 
         if (limit <= 0) return raw;  // stream directly, no buffering
 
@@ -231,7 +231,7 @@ public class Main {
         // Pass 1: find target entry name (no entry data read)
         String selected = null;
         String firstNonDir = null;
-        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
+        try (var zis = new ZipInputStream(Files.newInputStream(zipFile))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 if (entry.isDirectory()) continue;
@@ -248,7 +248,7 @@ public class Main {
 
         // Pass 2: stream the selected entry directly
         String target = selected;
-        ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile));
+        var zis = new ZipInputStream(Files.newInputStream(zipFile));
         ZipEntry entry;
         while ((entry = zis.getNextEntry()) != null) {
             if (entry.getName().equals(target)) {
@@ -261,7 +261,7 @@ public class Main {
     }
 
     private static boolean matchesFormat(String entryName, String format) {
-        String lower = entryName.toLowerCase();
+        var lower = entryName.toLowerCase();
         return "csv".equals(format)
                 ? lower.endsWith(".csv")
                 : (lower.endsWith(".nmea") || lower.endsWith(".aivdm") || lower.endsWith(".txt"));
@@ -272,9 +272,9 @@ public class Main {
      * as a bounded {@link ByteArrayInputStream}.  Only the requested lines are read.
      */
     private static InputStream applyLimit(InputStream is, int maxLines) throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-        StringBuilder sb = new StringBuilder();
-        int count = 0;
+        var reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        var sb = new StringBuilder();
+        var count = 0;
         String line;
         while (count < maxLines && (line = reader.readLine()) != null) {
             if (count > 0) sb.append('\n');
@@ -292,10 +292,10 @@ public class Main {
      * Falls back to {@code "nmea"} for any unrecognised extension.
      */
     static String detectFormat(Path file) throws IOException {
-        String filename = file.getFileName().toString();
-        String lower = filename.toLowerCase();
+        var filename = file.getFileName().toString();
+        var lower = filename.toLowerCase();
         if (lower.endsWith(".zip")) {
-            String inner = lower.substring(0, lower.length() - 4);
+            var inner = lower.substring(0, lower.length() - 4);
             if (inner.endsWith(".csv")) return "csv";
             // Outer name gives no hint — peek at the first ZIP entry name
             try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(file))) {

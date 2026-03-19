@@ -8,6 +8,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+
 import java.util.List;
 
 @Slf4j
@@ -25,7 +26,7 @@ public class VesselsResource {
             @QueryParam("mmsi") Long mmsi,
             @QueryParam("name") String name) {
         log.info("GET /api/vessels mmsi={} name={}", mmsi, name);
-        List<VesselRecord> results = queryService.queryVessels(mmsi, name);
+        var results = queryService.queryVessels(mmsi, name);
         log.info("GET /api/vessels returned {} records", results.size());
         return results;
     }
@@ -36,7 +37,7 @@ public class VesselsResource {
     @Operation(summary = "Get vessel by MMSI")
     public List<VesselRecord> getVessel(@PathParam("mmsi") long mmsi) {
         log.info("GET /api/vessels/{}", mmsi);
-        List<VesselRecord> results = queryService.queryVessels(mmsi, null);
+        var results = queryService.queryVessels(mmsi, null);
         log.info("GET /api/vessels/{} returned {} records", mmsi, results.size());
         return results;
     }

@@ -11,45 +11,45 @@ class VesselRecordTest {
 
     @Test
     void constructorAndGetters() {
-        VesselRecord v = new VesselRecord(
+        var v = new VesselRecord(
             219001234L, 9123456L, "MAERSK LINE", "OXDT",
             70, "Cargo", 294.0f, 32.0f, 14.0f, "SINGAPORE", "2024-01-15T08:00:00");
-        assertEquals(219001234L, v.getMmsi());
-        assertEquals(9123456L, v.getImo());
-        assertEquals("MAERSK LINE", v.getVesselName());
-        assertEquals("OXDT", v.getCallsign());
-        assertEquals(70, v.getShipType());
-        assertEquals("Cargo", v.getShipTypeDesc());
-        assertEquals(294.0f, v.getLengthM());
-        assertEquals(32.0f, v.getBeamM());
-        assertEquals(14.0f, v.getDraughtM());
-        assertEquals("SINGAPORE", v.getDestination());
-        assertEquals("2024-01-15T08:00:00", v.getLastSeen());
+        assertEquals(219001234L, v.mmsi());
+        assertEquals(9123456L, v.imo());
+        assertEquals("MAERSK LINE", v.vesselName());
+        assertEquals("OXDT", v.callsign());
+        assertEquals(70, v.shipType());
+        assertEquals("Cargo", v.shipTypeDesc());
+        assertEquals(294.0f, v.lengthM());
+        assertEquals(32.0f, v.beamM());
+        assertEquals(14.0f, v.draughtM());
+        assertEquals("SINGAPORE", v.destination());
+        assertEquals("2024-01-15T08:00:00", v.lastSeen());
     }
 
     @Test
     void allOptionalFieldsAcceptNull() {
-        VesselRecord v = new VesselRecord(
+        var v = new VesselRecord(
             219001234L, null, null, null,
             null, null, null, null, null, null, null);
-        assertEquals(219001234L, v.getMmsi());
-        assertNull(v.getImo());
-        assertNull(v.getVesselName());
-        assertNull(v.getLengthM());
-        assertNull(v.getLastSeen());
+        assertEquals(219001234L, v.mmsi());
+        assertNull(v.imo());
+        assertNull(v.vesselName());
+        assertNull(v.lengthM());
+        assertNull(v.lastSeen());
     }
 
     @Test
     void jsonRoundTrip() throws Exception {
-        VesselRecord original = new VesselRecord(
+        var original = new VesselRecord(
             219001234L, 9123456L, "TEST VESSEL", "ABCD",
             80, "Tanker", 180.0f, 28.0f, 10.5f, "ROTTERDAM", "2024-01-15T10:00:00");
-        String json = mapper.writeValueAsString(original);
-        VesselRecord deserialized = mapper.readValue(json, VesselRecord.class);
-        assertEquals(original.getMmsi(), deserialized.getMmsi());
-        assertEquals(original.getVesselName(), deserialized.getVesselName());
-        assertEquals(original.getImo(), deserialized.getImo());
-        assertEquals(original.getLengthM(), deserialized.getLengthM());
-        assertEquals(original.getDestination(), deserialized.getDestination());
+        var json = mapper.writeValueAsString(original);
+        var deserialized = mapper.readValue(json, VesselRecord.class);
+        assertEquals(original.mmsi(), deserialized.mmsi());
+        assertEquals(original.vesselName(), deserialized.vesselName());
+        assertEquals(original.imo(), deserialized.imo());
+        assertEquals(original.lengthM(), deserialized.lengthM());
+        assertEquals(original.destination(), deserialized.destination());
     }
 }

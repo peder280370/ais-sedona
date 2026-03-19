@@ -59,7 +59,7 @@ public class SedonaQueryService {
             Long mmsi, String startDate, String endDate, int limit) {
         registerViews();
         try {
-            StringBuilder sql = new StringBuilder(
+            var sql = new StringBuilder(
                 "SELECT mmsi, timestamp_us AS ts, " +
                 "ST_AsText(geometry) AS geom_wkt, sog, cog, heading, nav_status, rot, msg_type " +
                 "FROM ais_positions WHERE 1=1");
@@ -79,23 +79,8 @@ public class SedonaQueryService {
             }
             sql.append(" LIMIT ").append(limit);
 
-            List<Row> rows = spark.sql(sql.toString()).collectAsList();
-            List<PositionRecord> result = new ArrayList<>();
-            for (Row row : rows) {
-                result.add(new PositionRecord(
-                    row.getLong(0),
-                    row.get(1) != null ? row.get(1).toString() : null,
-                    row.getString(2),
-                    row.isNullAt(3) ? null : row.getFloat(3),
-                    row.isNullAt(4) ? null : row.getFloat(4),
-                    row.isNullAt(5) ? null : row.getInt(5),
-                    row.isNullAt(6) ? null : row.getInt(6),
-                    row.isNullAt(7) ? null : row.getFloat(7),
-                    row.isNullAt(8) ? null : row.getInt(8),
-                    null, null, null, null
-                ));
-            }
-            return result;
+            var rows = spark.sql(sql.toString()).collectAsList();
+            return rows.stream().map(this::mapToPositionRecord).toList();
         } catch (Exception e) {
             log.error("Error querying positions", e);
             return List.of();
@@ -118,7 +103,7 @@ public class SedonaQueryService {
             String fromTimestamp = fromDt.toString().replace('T', ' ');
             String fromDate = fromDt.toLocalDate().toString();
 
-            StringBuilder inner = new StringBuilder(
+            var inner = new StringBuilder(
                 "SELECT mmsi, timestamp_us AS ts, " +
                 "ST_AsText(geometry) AS geom_wkt, sog, cog, heading, nav_status, rot, msg_type, " +
                 "ROW_NUMBER() OVER (PARTITION BY mmsi ORDER BY timestamp_us DESC) AS rn " +
@@ -137,23 +122,8 @@ public class SedonaQueryService {
             String sql = "SELECT mmsi, ts, geom_wkt, sog, cog, heading, nav_status, rot, msg_type" +
                 " FROM (" + inner + ") WHERE rn = 1 LIMIT " + limit;
 
-            List<Row> rows = spark.sql(sql).collectAsList();
-            List<PositionRecord> result = new ArrayList<>();
-            for (Row row : rows) {
-                result.add(new PositionRecord(
-                    row.getLong(0),
-                    row.get(1) != null ? row.get(1).toString() : null,
-                    row.getString(2),
-                    row.isNullAt(3) ? null : row.getFloat(3),
-                    row.isNullAt(4) ? null : row.getFloat(4),
-                    row.isNullAt(5) ? null : row.getInt(5),
-                    row.isNullAt(6) ? null : row.getInt(6),
-                    row.isNullAt(7) ? null : row.getFloat(7),
-                    row.isNullAt(8) ? null : row.getInt(8),
-                    null, null, null, null
-                ));
-            }
-            return result;
+            var rows = spark.sql(sql).collectAsList();
+            return rows.stream().map(this::mapToPositionRecord).toList();
         } catch (Exception e) {
             log.error("Error querying positions at time", e);
             return List.of();
@@ -165,7 +135,7 @@ public class SedonaQueryService {
             Long mmsi, String startDate, String endDate) {
         registerViews();
         try {
-            StringBuilder sql = new StringBuilder(
+            var sql = new StringBuilder(
                 "SELECT mmsi, voyage_id, ST_AsGeoJSON(geometry) AS geom_json, " +
                 "start_time, end_time, " +
                 "point_count, avg_sog, distance_nm " +
@@ -179,10 +149,10 @@ public class SedonaQueryService {
             if (startDate != null) sql.append(" AND date >= '").append(startDate).append("'");
             if (endDate != null) sql.append(" AND date <= '").append(endDate).append("'");
 
-            List<Row> rows = spark.sql(sql.toString()).collectAsList();
-            List<Map<String, Object>> features = new ArrayList<>();
-            for (Row row : rows) {
-                Map<String, Object> feature = new HashMap<>();
+            var rows = spark.sql(sql.toString()).collectAsList();
+            var features = new ArrayList<Map<String, Object>>();
+            for (var row : rows) {
+                var feature = new HashMap<String, Object>();
                 feature.put("type", "Feature");
                 String geomJson = row.getString(2);
                 Object geometry = null;
@@ -194,7 +164,7 @@ public class SedonaQueryService {
                     }
                 }
                 feature.put("geometry", geometry);
-                Map<String, Object> props = new HashMap<>();
+                var props = new HashMap<String, Object>();
                 props.put("mmsi", row.getLong(0));
                 props.put("voyage_id", row.getString(1));
                 props.put("start_time", row.get(3) != null ? row.get(3).toString() : null);
@@ -215,7 +185,7 @@ public class SedonaQueryService {
     public List<VesselRecord> queryVessels(Long mmsi, String name) {
         registerViews();
         try {
-            StringBuilder sql = new StringBuilder(
+            var sql = new StringBuilder(
                 "SELECT mmsi, imo, vessel_name, callsign, ship_type, ship_type_desc, " +
                 "length_m, beam_m, draught_m, destination, " +
                 "last_seen_us AS last_seen " +
@@ -224,27 +194,38 @@ public class SedonaQueryService {
             if (name != null && !name.isBlank())
                 sql.append(" AND UPPER(vessel_name) LIKE UPPER('%").append(name.replace("'", "''")).append("%')");
 
-            List<Row> rows = spark.sql(sql.toString()).collectAsList();
-            List<VesselRecord> result = new ArrayList<>();
-            for (Row row : rows) {
-                result.add(new VesselRecord(
-                    row.getLong(0),
-                    row.isNullAt(1) ? null : row.getLong(1),
-                    row.isNullAt(2) ? null : row.getString(2),
-                    row.isNullAt(3) ? null : row.getString(3),
-                    row.isNullAt(4) ? null : row.getInt(4),
-                    row.isNullAt(5) ? null : row.getString(5),
-                    row.isNullAt(6) ? null : row.getFloat(6),
-                    row.isNullAt(7) ? null : row.getFloat(7),
-                    row.isNullAt(8) ? null : row.getFloat(8),
-                    row.isNullAt(9) ? null : row.getString(9),
-                    row.get(10) != null ? row.get(10).toString() : null
-                ));
-            }
-            return result;
+            var rows = spark.sql(sql.toString()).collectAsList();
+            return rows.stream().map(row -> new VesselRecord(
+                row.getLong(0),
+                row.isNullAt(1) ? null : row.getLong(1),
+                row.isNullAt(2) ? null : row.getString(2),
+                row.isNullAt(3) ? null : row.getString(3),
+                row.isNullAt(4) ? null : row.getInt(4),
+                row.isNullAt(5) ? null : row.getString(5),
+                row.isNullAt(6) ? null : row.getFloat(6),
+                row.isNullAt(7) ? null : row.getFloat(7),
+                row.isNullAt(8) ? null : row.getFloat(8),
+                row.isNullAt(9) ? null : row.getString(9),
+                row.get(10) != null ? row.get(10).toString() : null
+            )).toList();
         } catch (Exception e) {
             log.error("Error querying vessels", e);
             return List.of();
         }
+    }
+
+    private PositionRecord mapToPositionRecord(Row row) {
+        return new PositionRecord(
+            row.getLong(0),
+            row.get(1) != null ? row.get(1).toString() : null,
+            row.getString(2),
+            row.isNullAt(3) ? null : row.getFloat(3),
+            row.isNullAt(4) ? null : row.getFloat(4),
+            row.isNullAt(5) ? null : row.getInt(5),
+            row.isNullAt(6) ? null : row.getInt(6),
+            row.isNullAt(7) ? null : row.getFloat(7),
+            row.isNullAt(8) ? null : row.getInt(8),
+            null, null, null, null
+        );
     }
 }

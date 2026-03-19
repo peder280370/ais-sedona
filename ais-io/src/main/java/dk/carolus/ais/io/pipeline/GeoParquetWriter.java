@@ -78,12 +78,12 @@ public class GeoParquetWriter implements Closeable {
      * partition files with correct per-file bbox metadata.
      */
     public void write(AisPosition p) throws IOException {
-        String date   = p.getDatePartition();
-        String h3Cell = h3.latLngToCellAddress(p.getLat(), p.getLon(), H3_RESOLUTION);
-        String key    = date + "/" + h3Cell;
+        var date   = p.getDatePartition();
+        var h3Cell = h3.latLngToCellAddress(p.lat(), p.lon(), H3_RESOLUTION);
+        var key    = date + "/" + h3Cell;
 
-        PartitionBuffer buf = buffers.computeIfAbsent(key, k -> new PartitionBuffer());
-        buf.update(p.getLon(), p.getLat());
+        var buf = buffers.computeIfAbsent(key, k -> new PartitionBuffer());
+        buf.update(p.lon(), p.lat());
         buf.records.add(toRecord(p));
         totalWritten++;
     }
@@ -99,13 +99,13 @@ public class GeoParquetWriter implements Closeable {
      */
     @Override
     public void close() throws IOException {
-        int partitions = buffers.size();
+        var partitions = buffers.size();
         IOException first = null;
-        for (Map.Entry<String, PartitionBuffer> entry : buffers.entrySet()) {
-            String[] parts = entry.getKey().split("/", 2);
-            String date   = parts[0];
-            String h3Cell = parts[1];
-            PartitionBuffer buf = entry.getValue();
+        for (var entry : buffers.entrySet()) {
+            var parts  = entry.getKey().split("/", 2);
+            var date   = parts[0];
+            var h3Cell = parts[1];
+            var buf    = entry.getValue();
             try {
                 writePartition(date, h3Cell, buf);
             } catch (IOException e) {
@@ -123,7 +123,7 @@ public class GeoParquetWriter implements Closeable {
      * @return number of records written
      */
     public long write(List<AisPosition> positions) throws IOException {
-        for (AisPosition p : positions) {
+        for (var p : positions) {
             write(p);
         }
         close();
@@ -134,44 +134,43 @@ public class GeoParquetWriter implements Closeable {
 
     private void writePartition(String date, String h3Cell, PartitionBuffer buf)
             throws IOException {
-        Path partDir = outputDir.resolve("positions")
+        var partDir = outputDir.resolve("positions")
                 .resolve("date=" + date)
                 .resolve("h3_r3=" + h3Cell);
         Files.createDirectories(partDir);
-        File outFile = partDir.resolve(String.format("part-%05d.parquet", PART_FILE_NUMBER)).toFile();
+        var outFile = partDir.resolve(String.format("part-%05d.parquet", PART_FILE_NUMBER)).toFile();
 
-        Map<String, String> extraMeta = new HashMap<>();
+        var extraMeta = new HashMap<String, String>();
         extraMeta.put("geo", buildGeoMetadata(buf.minLon, buf.minLat, buf.maxLon, buf.maxLat));
 
         log.info("  Opening partition date={}/h3_r3={} → {}", date, h3Cell, outFile.getPath());
-        try (ParquetWriter<GenericRecord> writer =
-                     AvroParquetWriter.<GenericRecord>builder(new LocalOutputFile(outFile))
+        try (var writer = AvroParquetWriter.<GenericRecord>builder(new LocalOutputFile(outFile))
                              .withSchema(schema)
                              .withCompressionCodec(CompressionCodecName.SNAPPY)
                              .withExtraMetaData(extraMeta)
                              .build()) {
-            for (GenericRecord rec : buf.records) {
+            for (var rec : buf.records) {
                 writer.write(rec);
             }
         }
     }
 
     private GenericRecord toRecord(AisPosition p) {
-        GenericRecord rec = new GenericData.Record(schema);
+        var rec = new GenericData.Record(schema);
 
-        rec.put("mmsi", p.getMmsi());
-        rec.put("timestamp_us", p.getTimestamp().toEpochMilli() * 1_000L); // ms → µs
+        rec.put("mmsi", p.mmsi());
+        rec.put("timestamp_us", p.timestamp().toEpochMilli() * 1_000L); // ms → µs
 
         // Geometry: WGS84 Point encoded as WKB (lon, lat order per GeoParquet convention)
-        Point point = GEOM_FACTORY.createPoint(new Coordinate(p.getLon(), p.getLat()));
+        var point = GEOM_FACTORY.createPoint(new Coordinate(p.lon(), p.lat()));
         rec.put("geometry", ByteBuffer.wrap(wkbWriter.write(point)));
 
-        rec.put("sog", p.getSog());
-        rec.put("cog", p.getCog());
-        rec.put("heading", p.getHeading());
-        rec.put("nav_status", p.getNavStatus());
-        rec.put("rot", p.getRot());
-        rec.put("msg_type", p.getMsgType());
+        rec.put("sog", p.sog());
+        rec.put("cog", p.cog());
+        rec.put("heading", p.heading());
+        rec.put("nav_status", p.navStatus());
+        rec.put("rot", p.rot());
+        rec.put("msg_type", p.msgType());
 
         return rec;
     }
@@ -188,39 +187,20 @@ public class GeoParquetWriter implements Closeable {
      * @param maxLat maximum latitude of all geometries in this file
      */
     static String buildGeoMetadata(double minLon, double minLat, double maxLon, double maxLat) {
-        return "{"
-                + "\"version\":\"1.1.0\","
-                + "\"primary_column\":\"geometry\","
-                + "\"columns\":{"
-                + "\"geometry\":{"
-                + "\"encoding\":\"WKB\","
-                + "\"geometry_types\":[\"Point\"],"
-                + String.format(java.util.Locale.ROOT,
-                        "\"bbox\":[%f,%f,%f,%f],", minLon, minLat, maxLon, maxLat)
-                + "\"crs\":{"
-                + "\"$schema\":\"https://proj.org/schemas/v0.4/projjson.schema.json\","
-                + "\"type\":\"GeographicCRS\","
-                + "\"name\":\"WGS 84\","
-                + "\"datum_ensemble\":{"
-                + "\"name\":\"World Geodetic System 1984 ensemble\","
-                + "\"members\":[{\"name\":\"World Geodetic System 1984 (Transit)\","
-                + "\"id\":{\"authority\":\"EPSG\",\"code\":1166}}],"
-                + "\"ellipsoid\":{\"name\":\"WGS 84\","
-                + "\"semi_major_axis\":6378137,\"inverse_flattening\":298.257223563},"
-                + "\"accuracy\":\"2.0\","
-                + "\"id\":{\"authority\":\"EPSG\",\"code\":6326}},"
-                + "\"coordinate_system\":{\"subtype\":\"ellipsoidal\","
-                + "\"axis\":["
-                + "{\"name\":\"Geodetic latitude\",\"abbreviation\":\"Lat\","
-                + "\"direction\":\"north\",\"unit\":\"degree\"},"
-                + "{\"name\":\"Geodetic longitude\",\"abbreviation\":\"Lon\","
-                + "\"direction\":\"east\",\"unit\":\"degree\"}"
-                + "]},"
-                + "\"id\":{\"authority\":\"EPSG\",\"code\":4326}"
-                + "}"   // end crs
-                + "}"   // end geometry column
-                + "}"   // end columns
-                + "}";  // end geo
+        return String.format(java.util.Locale.ROOT, """
+                {"version":"1.1.0","primary_column":"geometry","columns":{"geometry":\
+{"encoding":"WKB","geometry_types":["Point"],"bbox":[%f,%f,%f,%f],\
+"crs":{"$schema":"https://proj.org/schemas/v0.4/projjson.schema.json",\
+"type":"GeographicCRS","name":"WGS 84","datum_ensemble":\
+{"name":"World Geodetic System 1984 ensemble",\
+"members":[{"name":"World Geodetic System 1984 (Transit)","id":{"authority":"EPSG","code":1166}}],\
+"ellipsoid":{"name":"WGS 84","semi_major_axis":6378137,"inverse_flattening":298.257223563},\
+"accuracy":"2.0","id":{"authority":"EPSG","code":6326}},\
+"coordinate_system":{"subtype":"ellipsoidal","axis":[\
+{"name":"Geodetic latitude","abbreviation":"Lat","direction":"north","unit":"degree"},\
+{"name":"Geodetic longitude","abbreviation":"Lon","direction":"east","unit":"degree"}]},\
+"id":{"authority":"EPSG","code":4326}}}}}""",
+                minLon, minLat, maxLon, maxLat);
     }
 
     // ---- Schema loading --------------------------------------------------

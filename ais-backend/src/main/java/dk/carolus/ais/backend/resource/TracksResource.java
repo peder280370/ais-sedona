@@ -31,8 +31,8 @@ public class TracksResource {
             @Parameter(description = "End date (YYYY-MM-DD)") @QueryParam("endDate") String endDate) {
         log.info("GET /api/tracks bbox=[{},{},{},{}] mmsi={} startDate={} endDate={}",
                 minLon, minLat, maxLon, maxLat, mmsi, startDate, endDate);
-        GeoJsonFeatureCollection result = queryService.queryTracks(minLon, minLat, maxLon, maxLat, mmsi, startDate, endDate);
-        log.info("GET /api/tracks returned {} features", result.getFeatures().size());
+        var result = queryService.queryTracks(minLon, minLat, maxLon, maxLat, mmsi, startDate, endDate);
+        log.info("GET /api/tracks returned {} features", result.features().size());
         return result;
     }
 }

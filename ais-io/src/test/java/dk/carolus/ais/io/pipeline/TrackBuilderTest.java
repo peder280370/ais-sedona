@@ -32,9 +32,9 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:01:00Z", 55.1, 10.1, 5f, 0),
                 pos(123, "2024-01-01T00:02:00Z", 55.2, 10.2, 5f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
-        assertEquals(3, result.getTracks().get(0).getPointCount());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
+        assertEquals(3, result.tracks().getFirst().pointCount());
     }
 
     @Test
@@ -43,9 +43,9 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:00:00Z", 55.0, 10.0, 5f, 0),
                 pos(123, "2024-01-01T00:01:00Z", 55.1, 10.1, 5f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
-        assertEquals(2, result.getTracks().get(0).getPointCount());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
+        assertEquals(2, result.tracks().getFirst().pointCount());
     }
 
     @Test
@@ -53,9 +53,9 @@ class TrackBuilderTest {
         List<AisPosition> input = List.of(
                 pos(123, "2024-01-01T00:00:00Z", 55.0, 10.0, 5f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(0, result.getTracks().size());
-        assertEquals(1, result.getSkippedSinglePoint());
+        var result = builder.build(input);
+        assertEquals(0, result.tracks().size());
+        assertEquals(1, result.skippedSinglePoint());
     }
 
     // ---- Time gap ---------------------------------------------------------
@@ -68,8 +68,8 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T06:01:01Z", 56.0, 11.0, 5f, 0),  // >6h gap
                 pos(123, "2024-01-01T06:02:00Z", 56.1, 11.1, 5f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(2, result.getTracks().size());
+        var result = builder.build(input);
+        assertEquals(2, result.tracks().size());
     }
 
     @Test
@@ -81,9 +81,9 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T06:01:00Z", 56.0, 11.0, 5f, 0),  // exactly 6h after 2nd
                 pos(123, "2024-01-01T06:02:00Z", 56.1, 11.1, 5f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
-        assertEquals(4, result.getTracks().get(0).getPointCount());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
+        assertEquals(4, result.tracks().getFirst().pointCount());
     }
 
     // ---- Nav status -------------------------------------------------------
@@ -96,8 +96,8 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:02:00Z", 55.2, 10.2, 0.1f, 5),  // now moored
                 pos(123, "2024-01-01T00:03:00Z", 55.2, 10.2, 0.0f, 5)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(2, result.getTracks().size());
+        var result = builder.build(input);
+        assertEquals(2, result.tracks().size());
     }
 
     @Test
@@ -108,8 +108,8 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:02:00Z", 55.1, 10.1, 5f,   0),  // underway
                 pos(123, "2024-01-01T00:03:00Z", 55.2, 10.2, 5f,   0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(2, result.getTracks().size());
+        var result = builder.build(input);
+        assertEquals(2, result.tracks().size());
     }
 
     @Test
@@ -119,8 +119,8 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:01:00Z", 55.0, 10.0, 0.0f, 5),
                 pos(123, "2024-01-01T00:02:00Z", 55.0, 10.0, 0.0f, 5)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
     }
 
     @Test
@@ -131,8 +131,8 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:01:00Z", 55.1, 10.1, 5f, null),
                 pos(123, "2024-01-01T00:02:00Z", 55.2, 10.2, 5f, null)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
     }
 
     // ---- Port call --------------------------------------------------------
@@ -152,11 +152,11 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:27:00Z", 55.3, 10.3, 0.1f, 0),
                 pos(123, "2024-01-01T00:33:01Z", 55.3, 10.3, 0.1f, 0)  // 6th slow, >30 min span
         );
-        TrackBuilder.BuildResult result = builder.build(input);
+        var result = builder.build(input);
         // Should have 2 tracks: [0..2] pre-port and [3..8] port-call segment
-        assertEquals(2, result.getTracks().size());
-        assertEquals(3, result.getTracks().get(0).getPointCount());
-        assertEquals(6, result.getTracks().get(1).getPointCount());
+        assertEquals(2, result.tracks().size());
+        assertEquals(3, result.tracks().getFirst().pointCount());
+        assertEquals(6, result.tracks().getLast().pointCount());
     }
 
     @Test
@@ -173,9 +173,9 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:27:00Z", 55.3, 10.3, 0.1f, 0),
                 pos(123, "2024-01-01T00:32:59Z", 55.3, 10.3, 0.1f, 0)  // 29 min 59 s
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
-        assertEquals(9, result.getTracks().get(0).getPointCount());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
+        assertEquals(9, result.tracks().getFirst().pointCount());
     }
 
     @Test
@@ -191,9 +191,9 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:27:00Z", 55.3, 10.3, 0.1f, 0),
                 pos(123, "2024-01-01T00:35:00Z", 55.3, 10.3, 0.1f, 0)  // only 5 slow
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
-        assertEquals(8, result.getTracks().get(0).getPointCount());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
+        assertEquals(8, result.tracks().getFirst().pointCount());
     }
 
     // ---- Downsampling -----------------------------------------------------
@@ -206,10 +206,10 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:00:05Z", 55.1, 10.1, 5f, 0),  // 5s later — dropped
                 pos(123, "2024-01-01T00:00:20Z", 55.2, 10.2, 5f, 0)   // 20s after first — kept
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
-        assertEquals(2, result.getTracks().get(0).getPointCount());
-        assertEquals(1, result.getDownsampledPositions());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
+        assertEquals(2, result.tracks().getFirst().pointCount());
+        assertEquals(1, result.downsampledPositions());
     }
 
     // ---- Haversine distance -----------------------------------------------
@@ -230,9 +230,9 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:01:00Z", 55.1, 10.1, 20f, 0),
                 pos(123, "2024-01-01T00:02:00Z", 55.2, 10.2, 30f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
-        assertEquals(20f, result.getTracks().get(0).getAvgSog(), 0.01f);
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
+        assertEquals(20f, result.tracks().getFirst().avgSog(), 0.01f);
     }
 
     @Test
@@ -241,9 +241,9 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:00:00Z", 55.0, 10.0, null, 0),
                 pos(123, "2024-01-01T00:01:00Z", 55.1, 10.1, null, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
-        assertNull(result.getTracks().get(0).getAvgSog());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
+        assertNull(result.tracks().getFirst().avgSog());
     }
 
     // ---- voyageId / multiple MMSIs / out-of-order -------------------------
@@ -255,10 +255,10 @@ class TrackBuilderTest {
                 pos(123456789L, "2024-01-01T00:00:00Z", 55.0, 10.0, 5f, 0),
                 pos(123456789L, "2024-01-01T00:01:00Z", 55.1, 10.1, 5f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
         String expectedId = "123456789_" + t0.getEpochSecond();
-        assertEquals(expectedId, result.getTracks().get(0).getVoyageId());
+        assertEquals(expectedId, result.tracks().getFirst().voyageId());
     }
 
     @Test
@@ -269,10 +269,10 @@ class TrackBuilderTest {
                 pos(111, "2024-01-01T00:01:00Z", 55.1, 10.1, 5f, 0),
                 pos(222, "2024-01-01T00:01:00Z", 56.1, 11.1, 5f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(2, result.getTracks().size());
-        long mmsi0 = result.getTracks().get(0).getMmsi();
-        long mmsi1 = result.getTracks().get(1).getMmsi();
+        var result = builder.build(input);
+        assertEquals(2, result.tracks().size());
+        long mmsi0 = result.tracks().getFirst().mmsi();
+        long mmsi1 = result.tracks().getLast().mmsi();
         assertNotEquals(mmsi0, mmsi1);
     }
 
@@ -284,13 +284,13 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:00:00Z", 55.0, 10.0, 5f, 0),
                 pos(123, "2024-01-01T00:01:00Z", 55.1, 10.1, 5f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
         // Verify start/end time order
-        AisTrack t = result.getTracks().get(0);
-        assertTrue(t.getStartTime().isBefore(t.getEndTime()));
-        assertEquals(Instant.parse("2024-01-01T00:00:00Z"), t.getStartTime());
-        assertEquals(Instant.parse("2024-01-01T00:02:00Z"), t.getEndTime());
+        var t = result.tracks().getFirst();
+        assertTrue(t.startTime().isBefore(t.endTime()));
+        assertEquals(Instant.parse("2024-01-01T00:00:00Z"), t.startTime());
+        assertEquals(Instant.parse("2024-01-01T00:02:00Z"), t.endTime());
     }
 
     // ---- WKB validity -----------------------------------------------------
@@ -302,15 +302,15 @@ class TrackBuilderTest {
                 pos(123, "2024-01-01T00:01:00Z", 55.1, 10.1, 5f, 0),
                 pos(123, "2024-01-01T00:02:00Z", 55.2, 10.2, 5f, 0)
         );
-        TrackBuilder.BuildResult result = builder.build(input);
-        assertEquals(1, result.getTracks().size());
+        var result = builder.build(input);
+        assertEquals(1, result.tracks().size());
 
-        byte[] wkb = result.getTracks().get(0).getGeometryWkb();
+        byte[] wkb = result.tracks().getFirst().geometryWkb();
         assertNotNull(wkb);
         assertTrue(wkb.length > 0);
 
-        WKBReader reader = new WKBReader();
-        LineString ls = (LineString) reader.read(wkb);
+        var reader = new WKBReader();
+        var ls = (LineString) reader.read(wkb);
         assertEquals("LineString", ls.getGeometryType());
         assertEquals(3, ls.getNumPoints());
         assertEquals(10.0, ls.getCoordinateN(0).x, 1e-9);

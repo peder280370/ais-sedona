@@ -2,18 +2,10 @@ package dk.carolus.ais.io.pipeline;
 
 import dk.carolus.ais.io.model.AisPosition;
 import dk.carolus.ais.io.model.VesselMetadata;
-import lombok.Value;
-import lombok.extern.slf4j.Slf4j;
-import dk.tbsalling.aismessages.ais.messages.AISMessage;
-import dk.tbsalling.aismessages.ais.messages.ClassBCSStaticDataReport;
-import dk.tbsalling.aismessages.ais.messages.Metadata;
-import dk.tbsalling.aismessages.ais.messages.PositionReport;
-import dk.tbsalling.aismessages.ais.messages.ShipAndVoyageData;
-import dk.tbsalling.aismessages.ais.messages.StandardClassBCSPositionReport;
+import dk.tbsalling.aismessages.ais.messages.*;
 import dk.tbsalling.aismessages.ais.messages.types.AISMessageType;
-import dk.tbsalling.aismessages.ais.messages.types.NavigationStatus;
-import dk.tbsalling.aismessages.ais.messages.types.ShipType;
 import dk.tbsalling.aismessages.nmea.messages.NMEAMessage;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,12 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -64,11 +51,7 @@ public class NmeaParser {
     // -----------------------------------------------------------------------
 
     /** Result holder returned by {@link #parse}. */
-    @Value
-    public static class ParseResult {
-        List<AisPosition> positions;
-        List<VesselMetadata> vessels;
-    }
+    public record ParseResult(List<AisPosition> positions, List<VesselMetadata> vessels) {}
 
     // -----------------------------------------------------------------------
 
@@ -80,7 +63,7 @@ public class NmeaParser {
      *                          if {@code null}, messages without a timestamp are skipped
      */
     public ParseResult parse(Path file, Instant fallbackTimestamp) throws IOException {
-        try (InputStream is = Files.newInputStream(file)) {
+        try (var is = Files.newInputStream(file)) {
             return parse(is, file.toString(), fallbackTimestamp);
         }
     }
@@ -96,17 +79,17 @@ public class NmeaParser {
     public ParseResult parse(InputStream is, String sourceName, Instant fallbackTimestamp)
             throws IOException {
 
-        List<AisPosition> positions = new ArrayList<>();
-        List<VesselMetadata> vessels = new ArrayList<>();
+        var positions = new ArrayList<AisPosition>();
+        var vessels = new ArrayList<VesselMetadata>();
 
         // Multi-sentence assembly state:
         // key = "channel|seqId"  →  array of NMEAMessage parts (null slots = not yet received)
-        Map<String, NMEAMessage[]> partials = new LinkedHashMap<>();
-        Map<String, Instant> partialTimestamps = new LinkedHashMap<>();
+        var partials = new LinkedHashMap<String, NMEAMessage[]>();
+        var partialTimestamps = new LinkedHashMap<String, Instant>();
 
         int lineNum = 0, parseErrors = 0, skipped = 0;
 
-        try (BufferedReader reader = new BufferedReader(
+        try (var reader = new BufferedReader(
                 new InputStreamReader(is, StandardCharsets.UTF_8))) {
 
             String line;
@@ -116,14 +99,14 @@ public class NmeaParser {
                 if (line.isEmpty() || line.startsWith("#")) continue;
 
                 // --- Extract tag block timestamp and strip the tag block prefix ---
-                Instant ts = fallbackTimestamp;
-                String nmeaStr = line;
+                var ts = fallbackTimestamp;
+                var nmeaStr = line;
 
-                Matcher m = TAG_BLOCK_LINE.matcher(line);
+                var m = TAG_BLOCK_LINE.matcher(line);
                 if (m.matches()) {
-                    String tags = m.group(1);
+                    var tags = m.group(1);
                     nmeaStr = m.group(2);
-                    Matcher tm = TAG_TIMESTAMP.matcher(tags);
+                    var tm = TAG_TIMESTAMP.matcher(tags);
                     if (tm.find()) {
                         long raw = Long.parseLong(tm.group(1));
                         // Values > 1e12 are milliseconds; smaller values are seconds
@@ -137,7 +120,7 @@ public class NmeaParser {
 
                 // --- Parse raw NMEA fields to drive multi-sentence assembly ---
                 // Format: !AIVDM,<total>,<num>,<seqId>,<channel>,<payload>,<fill>*<checksum>
-                String[] fields = nmeaStr.split(",", -1);
+                var fields = nmeaStr.split(",", -1);
                 if (fields.length < 6) {
                     log.debug("Line {}: too few NMEA fields, skipping", lineNum);
                     skipped++;
@@ -154,11 +137,11 @@ public class NmeaParser {
                     continue;
                 }
 
-                String seqId = fields[3].trim();     // empty for single-sentence messages
-                String channel = fields[4].trim();    // A or B
+                var seqId = fields[3].trim();     // empty for single-sentence messages
+                var channel = fields[4].trim();    // A or B
 
                 try {
-                    NMEAMessage nmea = NMEAMessage.fromString(nmeaStr);
+                    var nmea = NMEAMessage.fromString(nmeaStr);
                     processNmeaSentence(nmea, totalSentences, sentenceNumber, seqId, channel, ts,
                             partials, partialTimestamps, positions, vessels);
                 } catch (Exception e) {
@@ -190,7 +173,7 @@ public class NmeaParser {
         }
 
         // Multi-sentence message: accumulate parts
-        String key = channel + "|" + seqId;
+        var key = channel + "|" + seqId;
 
         if (sentenceNumber == 1) {
             partials.put(key, new NMEAMessage[totalSentences]);
@@ -199,7 +182,7 @@ public class NmeaParser {
             }
         }
 
-        NMEAMessage[] parts = partials.get(key);
+        var parts = partials.get(key);
         if (parts == null || sentenceNumber > parts.length) {
             // Received a continuation without seeing the first part — discard
             return;
@@ -209,9 +192,9 @@ public class NmeaParser {
 
         if (sentenceNumber == totalSentences) {
             // Last part received — check that all slots are filled
-            boolean complete = Arrays.stream(parts).allMatch(p -> p != null);
+            var complete = Arrays.stream(parts).allMatch(Objects::nonNull);
             if (complete) {
-                Instant msgTs = partialTimestamps.remove(key);
+                var msgTs = partialTimestamps.remove(key);
                 if (msgTs == null) msgTs = ts; // best-effort fallback
                 partials.remove(key);
                 decodeAndHandle(parts, msgTs, positions, vessels);
@@ -222,7 +205,7 @@ public class NmeaParser {
     private void decodeAndHandle(NMEAMessage[] parts, Instant ts,
                                  List<AisPosition> positions, List<VesselMetadata> vessels) {
         try {
-            AISMessage msg = (ts != null)
+            var msg = (ts != null)
                     ? AISMessage.create(new Metadata("NMEA", ts), parts)
                     : AISMessage.create(parts);
             handleMessage(msg, ts, positions, vessels);
@@ -238,19 +221,19 @@ public class NmeaParser {
             return;
         }
 
-        AISMessageType type = msg.getMessageType();
+        var type = msg.getMessageType();
 
         if (type == AISMessageType.PositionReportClassAScheduled
                 || type == AISMessageType.PositionReportClassAAssignedSchedule
                 || type == AISMessageType.PositionReportClassAResponseToInterrogation) {
 
-            PositionReport pos = (PositionReport) msg;
-            Float lat = pos.getLatitude();
-            Float lon = pos.getLongitude();
+            var pos = (PositionReport) msg;
+            var lat = pos.getLatitude();
+            var lon = pos.getLongitude();
             if (lat == null || lon == null) return;
 
-            NavigationStatus ns = pos.getNavigationStatus();
-            Integer rawRot = pos.getRateOfTurn();
+            var ns = pos.getNavigationStatus();
+            var rawRot = pos.getRateOfTurn();
 
             positions.add(new AisPosition(
                     (long) msg.getSourceMmsi().getMMSI(),
@@ -267,9 +250,9 @@ public class NmeaParser {
 
         } else if (type == AISMessageType.StandardClassBCSPositionReport) {
 
-            StandardClassBCSPositionReport pos = (StandardClassBCSPositionReport) msg;
-            Float lat = pos.getLatitude();
-            Float lon = pos.getLongitude();
+            var pos = (StandardClassBCSPositionReport) msg;
+            var lat = pos.getLatitude();
+            var lon = pos.getLongitude();
             if (lat == null || lon == null) return;
 
             positions.add(new AisPosition(
@@ -287,19 +270,11 @@ public class NmeaParser {
 
         } else if (type == AISMessageType.ShipAndVoyageRelatedData) {
 
-            ShipAndVoyageData svd = (ShipAndVoyageData) msg;
-            ShipType shipType = svd.getShipType();
+            var svd = (ShipAndVoyageData) msg;
+            var shipType = svd.getShipType();
 
-            Float length = null;
-            if (svd.getToBow() != null && svd.getToStern() != null) {
-                int v = svd.getToBow() + svd.getToStern();
-                if (v > 0) length = (float) v;
-            }
-            Float beam = null;
-            if (svd.getToPort() != null && svd.getToStarboard() != null) {
-                int v = svd.getToPort() + svd.getToStarboard();
-                if (v > 0) beam = (float) v;
-            }
+            var length = sumDimensions(svd.getToBow(), svd.getToStern());
+            var beam = sumDimensions(svd.getToPort(), svd.getToStarboard());
             Long imo = null;
             if (svd.getImo() != null && svd.getImo().getIMO() != null) {
                 int imoVal = svd.getImo().getIMO();
@@ -322,9 +297,9 @@ public class NmeaParser {
 
         } else if (type == AISMessageType.ClassBCSStaticDataReport) {
 
-            ClassBCSStaticDataReport cbd = (ClassBCSStaticDataReport) msg;
-            long mmsi = (long) msg.getSourceMmsi().getMMSI();
-            int partNum = cbd.getPartNumber();
+            var cbd = (ClassBCSStaticDataReport) msg;
+            var mmsi = (long) msg.getSourceMmsi().getMMSI();
+            var partNum = cbd.getPartNumber();
 
             if (partNum == 0) {
                 // Part A: contains ship name only
@@ -333,17 +308,9 @@ public class NmeaParser {
                         null, null, null, null, null, null, ts));
             } else {
                 // Part B: contains ship type, callsign, dimensions
-                ShipType shipType = cbd.getShipType();
-                Float length = null;
-                if (cbd.getToBow() != null && cbd.getToStern() != null) {
-                    int v = cbd.getToBow() + cbd.getToStern();
-                    if (v > 0) length = (float) v;
-                }
-                Float beam = null;
-                if (cbd.getToPort() != null && cbd.getToStarboard() != null) {
-                    int v = cbd.getToPort() + cbd.getToStarboard();
-                    if (v > 0) beam = (float) v;
-                }
+                var shipType = cbd.getShipType();
+                var length = sumDimensions(cbd.getToBow(), cbd.getToStern());
+                var beam = sumDimensions(cbd.getToPort(), cbd.getToStarboard());
                 vessels.add(new VesselMetadata(
                         mmsi, null, null, trimNmea(cbd.getCallsign()),
                         shipType != null ? shipType.getCode() : null,
@@ -354,13 +321,19 @@ public class NmeaParser {
         // Other message types (21=AtoN, 9=SAR, etc.) are silently ignored
     }
 
+    private static Float sumDimensions(Integer a, Integer b) {
+        if (a == null || b == null) return null;
+        int v = a + b;
+        return v > 0 ? (float) v : null;
+    }
+
     /**
      * Trims whitespace and NMEA padding ({@code @}) from a string field.
      * Returns {@code null} if the result is empty.
      */
     static String trimNmea(String s) {
         if (s == null) return null;
-        String trimmed = s.replace('@', ' ').trim();
+        var trimmed = s.replace('@', ' ').trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 }

@@ -6,12 +6,9 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.parquet.avro.AvroParquetWriter;
-import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -54,17 +51,16 @@ public class VesselMetadataWriter {
             return 0;
         }
 
-        Path vesselDir = outputDir.resolve("vessels");
+        var vesselDir = outputDir.resolve("vessels");
         Files.createDirectories(vesselDir);
-        File outFile = vesselDir.resolve("part-00000.parquet").toFile();
+        var outFile = vesselDir.resolve("part-00000.parquet").toFile();
 
-        try (ParquetWriter<GenericRecord> writer =
-                     AvroParquetWriter.<GenericRecord>builder(new LocalOutputFile(outFile))
+        try (var writer = AvroParquetWriter.<GenericRecord>builder(new LocalOutputFile(outFile))
                              .withSchema(schema)
                              .withCompressionCodec(CompressionCodecName.SNAPPY)
                              .build()) {
 
-            for (VesselMetadata v : vessels) {
+            for (var v : vessels) {
                 writer.write(toRecord(v));
             }
         }
@@ -76,26 +72,26 @@ public class VesselMetadataWriter {
     // -----------------------------------------------------------------------
 
     private GenericRecord toRecord(VesselMetadata v) {
-        GenericRecord rec = new GenericData.Record(schema);
+        var rec = new GenericData.Record(schema);
 
-        rec.put("mmsi", v.getMmsi());
-        rec.put("imo", v.getImo());
-        rec.put("vessel_name", v.getVesselName());
-        rec.put("callsign", v.getCallsign());
-        rec.put("ship_type", v.getShipType());
-        rec.put("ship_type_desc", v.getShipTypeDesc());
-        rec.put("length_m", v.getLengthM());
-        rec.put("beam_m", v.getBeamM());
-        rec.put("draught_m", v.getDraughtM());
-        rec.put("destination", v.getDestination());
+        rec.put("mmsi", v.mmsi());
+        rec.put("imo", v.imo());
+        rec.put("vessel_name", v.vesselName());
+        rec.put("callsign", v.callsign());
+        rec.put("ship_type", v.shipType());
+        rec.put("ship_type_desc", v.shipTypeDesc());
+        rec.put("length_m", v.lengthM());
+        rec.put("beam_m", v.beamM());
+        rec.put("draught_m", v.draughtM());
+        rec.put("destination", v.destination());
         rec.put("last_seen_us",
-                v.getLastSeen() != null ? v.getLastSeen().toEpochMilli() * 1_000L : null);
+                v.lastSeen() != null ? v.lastSeen().toEpochMilli() * 1_000L : null);
 
         return rec;
     }
 
     private static Schema loadSchema() throws IOException {
-        try (InputStream is = VesselMetadataWriter.class
+        try (var is = VesselMetadataWriter.class
                 .getResourceAsStream("/avro/vessel_metadata.avsc")) {
             if (is == null) {
                 throw new IOException("Avro schema resource not found: /avro/vessel_metadata.avsc");

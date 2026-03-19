@@ -11,17 +11,17 @@ class ImportResultTest {
 
     @Test
     void constructorAndGetters() {
-        ImportResult r = new ImportResult(100, 20, 5, 1234);
-        assertEquals(100, r.getPositionsWritten());
-        assertEquals(20, r.getVesselRecords());
-        assertEquals(5, r.getTracksBuilt());
-        assertEquals(1234, r.getDurationMs());
+        var r = new ImportResult(100, 20, 5, 1234);
+        assertEquals(100, r.positionsWritten());
+        assertEquals(20, r.vesselRecords());
+        assertEquals(5, r.tracksBuilt());
+        assertEquals(1234, r.durationMs());
     }
 
     @Test
     void jsonSerializationContainsAllFields() throws Exception {
-        ImportResult r = new ImportResult(42, 7, 3, 999);
-        String json = mapper.writeValueAsString(r);
+        var r = new ImportResult(42, 7, 3, 999);
+        var json = mapper.writeValueAsString(r);
         assertTrue(json.contains("\"positionsWritten\":42"));
         assertTrue(json.contains("\"vesselRecords\":7"));
         assertTrue(json.contains("\"tracksBuilt\":3"));
@@ -30,21 +30,21 @@ class ImportResultTest {
 
     @Test
     void jsonRoundTrip() throws Exception {
-        ImportResult original = new ImportResult(10, 2, 1, 500);
-        String json = mapper.writeValueAsString(original);
-        ImportResult deserialized = mapper.readValue(json, ImportResult.class);
-        assertEquals(original.getPositionsWritten(), deserialized.getPositionsWritten());
-        assertEquals(original.getVesselRecords(), deserialized.getVesselRecords());
-        assertEquals(original.getTracksBuilt(), deserialized.getTracksBuilt());
-        assertEquals(original.getDurationMs(), deserialized.getDurationMs());
+        var original = new ImportResult(10, 2, 1, 500);
+        var json = mapper.writeValueAsString(original);
+        var deserialized = mapper.readValue(json, ImportResult.class);
+        assertEquals(original.positionsWritten(), deserialized.positionsWritten());
+        assertEquals(original.vesselRecords(), deserialized.vesselRecords());
+        assertEquals(original.tracksBuilt(), deserialized.tracksBuilt());
+        assertEquals(original.durationMs(), deserialized.durationMs());
     }
 
     @Test
     void zeroCountsAreValid() {
-        ImportResult r = new ImportResult(0, 0, 0, 0);
-        assertEquals(0, r.getPositionsWritten());
-        assertEquals(0, r.getVesselRecords());
-        assertEquals(0, r.getTracksBuilt());
-        assertEquals(0, r.getDurationMs());
+        var r = new ImportResult(0, 0, 0, 0);
+        assertEquals(0, r.positionsWritten());
+        assertEquals(0, r.vesselRecords());
+        assertEquals(0, r.tracksBuilt());
+        assertEquals(0, r.durationMs());
     }
 }

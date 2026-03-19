@@ -1,6 +1,6 @@
 # ais-backend
 
-REST API for importing and querying AIS maritime data. Built with [Quarkus](https://quarkus.io/) 3.9.5, it orchestrates the `ais-io` pipeline library for ingestion and connects to a remote Apache Spark / Sedona cluster for spatial queries.
+REST API for importing and querying AIS maritime data. Built with [Quarkus](https://quarkus.io/) 3.32.1, it orchestrates the `ais-io` pipeline library for ingestion and connects to a remote Apache Spark / Sedona cluster for spatial queries.
 
 ## Architecture
 
@@ -57,7 +57,7 @@ Client
 ```bash
 # Upload a CSV file
 curl -X POST http://localhost:8080/api/import/file \
-  -F "file=@ais-csv/aisdk-2026-03-14.zip" \
+  -F "file=@ais-io/data/sample/aisdk-2026-03-14.zip" \
   -F "format=csv"
 
 # Upload an NMEA file for a specific date
@@ -243,7 +243,7 @@ docker compose up
 ```
 
 This starts:
-- **spark** — Spark 3.5 with Sedona 1.8.1 and the Spark Connect server on port 15002
+- **spark** — Spark 4.0 with Sedona 1.8.1 and the Spark Connect server on port 15002
 - **backend** — ais-backend on port 8080, sharing the `/data` volume with Spark
 
 ### Without Docker

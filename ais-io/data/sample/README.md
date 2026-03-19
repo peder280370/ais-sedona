@@ -6,14 +6,14 @@ All files contain raw `!AIVDM` / `!AIVDO` NMEA sentences parseable by `com.githu
 
 ## Files
 
-| File | Lines | Size | Description |
-|---|---|---|---|
+| File                    | Lines | Size | Description |
+|-------------------------|---|---|---|
 | `nmea-sample-large.txt` | 85,194 | 4.0 MB | Large corpus for volume testing |
 | `sample-800lines.aivdm` | 1,121 | 46 KB | Medium sample from real vessel traffic |
-| `mixed_types.nmea` | 108 | 5.1 KB | Covers many AIS message types (1–27) |
-| `multi-part.nmea` | 93 | 5.5 KB | Multi-part messages (e.g. Type 5 vessel static data) |
-| `sample.nmea` | 2 | 323 B | Minimal example |
-| `errors.nmea` | 4 | 459 B | Malformed / edge-case messages |
+| `mixed_types.nmea`      | 108 | 5.1 KB | Covers many AIS message types (1–27) |
+| `multi-part.nmea`       | 93 | 5.5 KB | Multi-part messages (e.g. Type 5 vessel static data) |
+| `sample.nmea`           | 2 | 323 B | Minimal example |
+| `errors.nmea`           | 4 | 459 B | Malformed / edge-case messages |
 
 ## Sources
 

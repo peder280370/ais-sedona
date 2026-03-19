@@ -17,8 +17,8 @@ class NmeaParserTest {
     private final Instant FALLBACK = Instant.parse("2020-09-04T18:00:00Z");
 
     private NmeaParser.ParseResult parse(String nmea) throws Exception {
-        NmeaParser parser = new NmeaParser();
-        InputStream is = new ByteArrayInputStream(nmea.getBytes(StandardCharsets.UTF_8));
+        var parser = new NmeaParser();
+        var is = new ByteArrayInputStream(nmea.getBytes(StandardCharsets.UTF_8));
         return parser.parse(is, "test", FALLBACK);
     }
 
@@ -31,20 +31,20 @@ class NmeaParserTest {
         // c: value is epoch milliseconds (1599239526500 = 2020-09-04T18:12:06.500Z)
         String nmea =
             "\\c:1599239526500,s:sdr-experiments,T:2020-09-04 18.12.06*5D\\!AIVDM,1,1,,B,B>cSnNP00FVur7UaC7WQ3wS1jCJJ,0*73\n";
-        NmeaParser.ParseResult result = parse(nmea);
+        var result = parse(nmea);
         // Type 18 (Class B position) — should produce a position
-        assertFalse(result.getPositions().isEmpty(), "Expected at least one position from type-18 sentence");
-        AisPosition pos = result.getPositions().get(0);
-        assertEquals(Instant.ofEpochMilli(1599239526500L), pos.getTimestamp());
+        assertFalse(result.positions().isEmpty(), "Expected at least one position from type-18 sentence");
+        var pos = result.positions().getFirst();
+        assertEquals(Instant.ofEpochMilli(1599239526500L), pos.timestamp());
     }
 
     @Test
     void useFallbackTimestampWhenNoTagBlock() throws Exception {
         // Plain AIVDM type-1 sentence with no tag block (from sample-800lines.aivdm)
         String nmea = "!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A\n";
-        NmeaParser.ParseResult result = parse(nmea);
-        if (!result.getPositions().isEmpty()) {
-            assertEquals(FALLBACK, result.getPositions().get(0).getTimestamp());
+        var result = parse(nmea);
+        if (!result.positions().isEmpty()) {
+            assertEquals(FALLBACK, result.positions().getFirst().timestamp());
         }
         // It's acceptable for this specific sentence to fail to produce a position
         // (the test verifies the parser doesn't throw)
@@ -61,7 +61,7 @@ class NmeaParserTest {
             "\n" +
             "!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A\n";
         // No exception expected
-        NmeaParser.ParseResult result = parse(nmea);
+        var result = parse(nmea);
         assertNotNull(result);
     }
 
@@ -75,9 +75,9 @@ class NmeaParserTest {
         String nmea =
             "!AIVDM,2,1,9,B,53nFBv01SJ<thHp6220H4heHTf2222222222221?50:454o<`9QSlUDp,0*09\n" +
             "!AIVDM,2,2,9,B,888888888888880,2*2E\n";
-        NmeaParser.ParseResult result = parse(nmea);
+        var result = parse(nmea);
         // Type 5 produces vessel metadata
-        assertFalse(result.getVessels().isEmpty(),
+        assertFalse(result.vessels().isEmpty(),
                 "Expected vessel metadata from multi-sentence type-5 message");
     }
 
@@ -91,10 +91,10 @@ class NmeaParserTest {
         String nmea =
             "!AIVDM,2,1,9,B,53nFBv01SJ<thHp6220H4heHTf2222222222221?50:454o<`9QSlUDp,0*09\n" +
             "!AIVDM,2,2,9,B,888888888888880,2*2E\n";
-        NmeaParser.ParseResult result = parse(nmea);
-        assertFalse(result.getVessels().isEmpty());
-        VesselMetadata v = result.getVessels().get(0);
-        assertTrue(v.getMmsi() > 0);
+        var result = parse(nmea);
+        assertFalse(result.vessels().isEmpty());
+        var v = result.vessels().getFirst();
+        assertTrue(v.mmsi() > 0);
     }
 
     // -----------------------------------------------------------------------
@@ -120,7 +120,7 @@ class NmeaParserTest {
             "not a valid nmea line at all\n" +
             "!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A\n";
         // Should not throw
-        NmeaParser.ParseResult result = parse(nmea);
+        var result = parse(nmea);
         assertNotNull(result);
     }
 
@@ -133,9 +133,9 @@ class NmeaParserTest {
             "!AIVDM,1,1,,B,H52aML0t<D4r0hTHD0000000000,2*71\n" +  // type 24 part A
             "!AIVDM,2,1,1,A,55NPvo800001L@OCWO@EDLDpTF0br0QDLE:2220q000005OP07T0DhhAkmC0,0*65\n" +
             "!AIVDM,2,2,1,A,K83Dp888880,2*69\n";                   // type 5, 2 parts
-        NmeaParser.ParseResult result = parse(nmea);
+        var result = parse(nmea);
         assertNotNull(result);
         // Just verify it doesn't crash and returns something
-        assertTrue(result.getPositions().size() + result.getVessels().size() >= 0);
+        assertTrue(result.positions().size() + result.vessels().size() >= 0);
     }
 }

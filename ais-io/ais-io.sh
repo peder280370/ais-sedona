@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-JAR="$SCRIPT_DIR/ais-io/target/ais-io-1.0-SNAPSHOT-jar-with-dependencies.jar"
+JAR="$SCRIPT_DIR/target/ais-io-1.0-SNAPSHOT-jar-with-dependencies.jar"
 
 # Help
 for arg in "$@"; do

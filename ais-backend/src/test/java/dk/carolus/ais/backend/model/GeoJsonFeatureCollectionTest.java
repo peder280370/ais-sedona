@@ -14,41 +14,41 @@ class GeoJsonFeatureCollectionTest {
 
     @Test
     void typeIsAlwaysFeatureCollection() {
-        GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection(List.of());
-        assertEquals("FeatureCollection", fc.getType());
+        var fc = new GeoJsonFeatureCollection(List.of());
+        assertEquals("FeatureCollection", fc.type());
     }
 
     @Test
     void featuresListIsPreserved() {
-        Map<String, Object> feature = Map.of(
+        var feature = Map.of(
             "type", "Feature",
             "geometry", "{\"type\":\"LineString\",\"coordinates\":[]}",
             "properties", Map.of("mmsi", 123456789L));
-        GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection(List.of(feature));
-        assertEquals(1, fc.getFeatures().size());
-        assertEquals("Feature", fc.getFeatures().get(0).get("type"));
+        var fc = new GeoJsonFeatureCollection(List.of(feature));
+        assertEquals(1, fc.features().size());
+        assertEquals("Feature", fc.features().getFirst().get("type"));
     }
 
     @Test
     void emptyFeaturesListIsValid() {
-        GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection(List.of());
-        assertNotNull(fc.getFeatures());
-        assertTrue(fc.getFeatures().isEmpty());
+        var fc = new GeoJsonFeatureCollection(List.of());
+        assertNotNull(fc.features());
+        assertTrue(fc.features().isEmpty());
     }
 
     @Test
     void jsonSerializationHasCorrectShape() throws Exception {
-        GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection(List.of());
-        String json = mapper.writeValueAsString(fc);
+        var fc = new GeoJsonFeatureCollection(List.of());
+        var json = mapper.writeValueAsString(fc);
         assertTrue(json.contains("\"type\":\"FeatureCollection\""));
         assertTrue(json.contains("\"features\":[]"));
     }
 
     @Test
     void jsonSerializationWithFeature() throws Exception {
-        GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection(List.of(
+        var fc = new GeoJsonFeatureCollection(List.of(
             Map.of("type", "Feature", "mmsi", 123L)));
-        String json = mapper.writeValueAsString(fc);
+        var json = mapper.writeValueAsString(fc);
         assertTrue(json.contains("\"type\":\"FeatureCollection\""));
         assertTrue(json.contains("\"type\":\"Feature\""));
     }

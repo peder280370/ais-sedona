@@ -63,78 +63,78 @@ class AisImportServiceTest {
 
     @Test
     void importCsv_validPosition_writesPosition() throws Exception {
-        InputStream is = toStream(CSV_ONE_POSITION);
-        ImportResult result = importService.importFile(is, null, "csv", LocalDate.of(2024, 1, 15));
-        assertEquals(1, result.getPositionsWritten());
+        var is = toStream(CSV_ONE_POSITION);
+        var result = importService.importFile(is, null, "csv", LocalDate.of(2024, 1, 15));
+        assertEquals(1, result.positionsWritten());
     }
 
     @Test
     void importCsv_nullIsland_dropsPosition() throws Exception {
-        InputStream is = toStream(CSV_NULL_ISLAND);
-        ImportResult result = importService.importFile(is, null, "csv", null);
-        assertEquals(0, result.getPositionsWritten());
+        var is = toStream(CSV_NULL_ISLAND);
+        var result = importService.importFile(is, null, "csv", null);
+        assertEquals(0, result.positionsWritten());
     }
 
     @Test
     void importCsv_invalidSog_dropsPosition() throws Exception {
-        InputStream is = toStream(CSV_INVALID_SOG);
-        ImportResult result = importService.importFile(is, null, "csv", null);
-        assertEquals(0, result.getPositionsWritten());
+        var is = toStream(CSV_INVALID_SOG);
+        var result = importService.importFile(is, null, "csv", null);
+        assertEquals(0, result.positionsWritten());
     }
 
     @Test
     void importCsv_emptyInput_returnsZeroCounts() throws Exception {
-        InputStream is = toStream("mmsi,timestamp,lat,lon\n");
-        ImportResult result = importService.importFile(is, null, "csv", null);
-        assertEquals(0, result.getPositionsWritten());
-        assertEquals(0, result.getVesselRecords());
-        assertEquals(0, result.getTracksBuilt());
+        var is = toStream("mmsi,timestamp,lat,lon\n");
+        var result = importService.importFile(is, null, "csv", null);
+        assertEquals(0, result.positionsWritten());
+        assertEquals(0, result.vesselRecords());
+        assertEquals(0, result.tracksBuilt());
     }
 
     // ---- NMEA import ------------------------------------------------------
 
     @Test
     void importNmea_validSentence_writesPosition() throws Exception {
-        InputStream is = toStream(NMEA_ONE_POSITION);
-        ImportResult result = importService.importFile(is, null, "nmea", null);
-        assertTrue(result.getPositionsWritten() >= 0,
+        var is = toStream(NMEA_ONE_POSITION);
+        var result = importService.importFile(is, null, "nmea", null);
+        assertTrue(result.positionsWritten() >= 0,
             "positionsWritten should be non-negative");
         // The sentence is known valid from NmeaParserTest — expect at least one position
     }
 
     @Test
     void importNmea_emptyInput_returnsZeroCounts() throws Exception {
-        InputStream is = toStream("");
-        ImportResult result = importService.importFile(is, null, "nmea", null);
-        assertEquals(0, result.getPositionsWritten());
-        assertEquals(0, result.getVesselRecords());
-        assertEquals(0, result.getTracksBuilt());
+        var is = toStream("");
+        var result = importService.importFile(is, null, "nmea", null);
+        assertEquals(0, result.positionsWritten());
+        assertEquals(0, result.vesselRecords());
+        assertEquals(0, result.tracksBuilt());
     }
 
     // ---- General ----------------------------------------------------------
 
     @Test
     void durationMsIsNonNegative() throws Exception {
-        InputStream is = toStream(CSV_ONE_POSITION);
-        ImportResult result = importService.importFile(is, null, "csv", null);
-        assertTrue(result.getDurationMs() >= 0);
+        var is = toStream(CSV_ONE_POSITION);
+        var result = importService.importFile(is, null, "csv", null);
+        assertTrue(result.durationMs() >= 0);
     }
 
     @Test
     void tracksBuiltIsNonNegative() throws Exception {
-        InputStream is = toStream(CSV_ONE_POSITION);
-        ImportResult result = importService.importFile(is, null, "csv", null);
-        assertTrue(result.getTracksBuilt() >= 0);
+        var is = toStream(CSV_ONE_POSITION);
+        var result = importService.importFile(is, null, "csv", null);
+        assertTrue(result.tracksBuilt() >= 0);
     }
 
     @Test
     void csvWithVesselMetadata_countsVesselRecords() throws Exception {
-        String csvWithVessel =
+        var csvWithVessel =
             "mmsi,timestamp,lat,lon,name,callsign,ship type\n" +
             "123456789,2024-01-15T08:00:00Z,51.5,2.3,MY SHIP,ABCD,70\n";
-        InputStream is = toStream(csvWithVessel);
-        ImportResult result = importService.importFile(is, null, "csv", null);
-        assertEquals(1, result.getVesselRecords());
+        var is = toStream(csvWithVessel);
+        var result = importService.importFile(is, null, "csv", null);
+        assertEquals(1, result.vesselRecords());
     }
 
     // ---- Format detection -------------------------------------------------
@@ -142,13 +142,13 @@ class AisImportServiceTest {
     @Test
     void importFile_csvFormatRoutesToCsvParser() throws Exception {
         // CSV header without nmea content — would throw in NMEA parser, not in CSV parser
-        InputStream is = toStream(CSV_ONE_POSITION);
+        var is = toStream(CSV_ONE_POSITION);
         assertDoesNotThrow(() -> importService.importFile(is, null, "csv", null));
     }
 
     @Test
     void importFile_nmeaFormatRoutesToNmeaParser() throws Exception {
-        InputStream is = toStream(NMEA_ONE_POSITION);
+        var is = toStream(NMEA_ONE_POSITION);
         assertDoesNotThrow(() -> importService.importFile(is, null, "NMEA", null));
     }
 

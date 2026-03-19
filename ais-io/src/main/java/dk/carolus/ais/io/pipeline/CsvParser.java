@@ -2,7 +2,6 @@ package dk.carolus.ais.io.pipeline;
 
 import dk.carolus.ais.io.model.AisPosition;
 import dk.carolus.ais.io.model.VesselMetadata;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
@@ -82,11 +81,7 @@ public class CsvParser {
      * Combined result of a full CSV parse: position records plus one
      * {@link VesselMetadata} record per unique MMSI (deduplicated, best-known fields).
      */
-    @Value
-    public static class ParseResult {
-        List<AisPosition> positions;
-        List<VesselMetadata> vessels;
-    }
+    public record ParseResult(List<AisPosition> positions, List<VesselMetadata> vessels) {}
 
     // ---- Entry points -------------------------------------------------------
 
@@ -94,7 +89,7 @@ public class CsvParser {
      * Full parse: returns both position records and deduplicated vessel metadata.
      */
     public ParseResult parseFull(Path csvFile) throws IOException {
-        try (InputStream is = Files.newInputStream(csvFile)) {
+        try (var is = Files.newInputStream(csvFile)) {
             return parseFull(is, csvFile.toString());
         }
     }
@@ -103,22 +98,22 @@ public class CsvParser {
      * Full parse: returns both position records and deduplicated vessel metadata.
      */
     public ParseResult parseFull(InputStream is, String sourceName) throws IOException {
-        List<AisPosition> positions = new ArrayList<>();
-        Map<Long, VesselMetadata> metaMap = new HashMap<>();
-        long lineNum = 0;
-        long skipped = 0;
+        var positions = new ArrayList<AisPosition>();
+        var metaMap = new HashMap<Long, VesselMetadata>();
+        var lineNum = 0L;
+        var skipped = 0L;
 
-        try (BufferedReader reader = new BufferedReader(
+        try (var reader = new BufferedReader(
                 new InputStreamReader(is, StandardCharsets.UTF_8))) {
 
-            String headerLine = reader.readLine();
+            var headerLine = reader.readLine();
             if (headerLine == null) {
                 log.warn("Empty file: {}", sourceName);
                 return new ParseResult(positions, List.of());
             }
             lineNum++;
 
-            Map<String, Integer> colIndex = parseHeader(headerLine);
+            var colIndex = parseHeader(headerLine);
             if (!validateRequiredColumns(colIndex, sourceName)) {
                 return new ParseResult(positions, List.of());
             }
@@ -130,13 +125,13 @@ public class CsvParser {
                 if (line.isEmpty()) continue;
 
                 try {
-                    String[] cols = splitCsvLine(line);
-                    AisPosition pos = buildPosition(cols, colIndex);
+                    var cols = splitCsvLine(line);
+                    var pos = buildPosition(cols, colIndex);
                     if (pos != null) {
                         positions.add(pos);
-                        VesselMetadata meta = buildMetadata(cols, colIndex, pos.getMmsi(), pos.getTimestamp());
+                        var meta = buildMetadata(cols, colIndex, pos.mmsi(), pos.timestamp());
                         if (meta != null) {
-                            metaMap.merge(meta.getMmsi(), meta, CsvParser::mergeMetadata);
+                            metaMap.merge(meta.mmsi(), meta, CsvParser::mergeMetadata);
                         }
                     }
                 } catch (Exception e) {
@@ -146,7 +141,7 @@ public class CsvParser {
             }
         }
 
-        List<VesselMetadata> vessels = new ArrayList<>(metaMap.values());
+        var vessels = new ArrayList<>(metaMap.values());
         log.info("Parsed {} positions and {} vessel records from {} ({} lines skipped)",
                 positions.size(), vessels.size(), sourceName, skipped);
         return new ParseResult(positions, vessels);
@@ -161,22 +156,22 @@ public class CsvParser {
     public void streamFull(InputStream is, String sourceName,
                            Consumer<AisPosition> onPosition,
                            Consumer<VesselMetadata> onVessel) throws IOException {
-        long lineNum = 0;
-        long posCount = 0;
-        long vesselCount = 0;
-        long skipped = 0;
+        var lineNum = 0L;
+        var posCount = 0L;
+        var vesselCount = 0L;
+        var skipped = 0L;
 
-        try (BufferedReader reader = new BufferedReader(
+        try (var reader = new BufferedReader(
                 new InputStreamReader(is, StandardCharsets.UTF_8))) {
 
-            String headerLine = reader.readLine();
+            var headerLine = reader.readLine();
             if (headerLine == null) {
                 log.warn("Empty file: {}", sourceName);
                 return;
             }
             lineNum++;
 
-            Map<String, Integer> colIndex = parseHeader(headerLine);
+            var colIndex = parseHeader(headerLine);
             if (!validateRequiredColumns(colIndex, sourceName)) {
                 return;
             }
@@ -188,12 +183,12 @@ public class CsvParser {
                 if (line.isEmpty()) continue;
 
                 try {
-                    String[] cols = splitCsvLine(line);
-                    AisPosition pos = buildPosition(cols, colIndex);
+                    var cols = splitCsvLine(line);
+                    var pos = buildPosition(cols, colIndex);
                     if (pos != null) {
                         onPosition.accept(pos);
                         posCount++;
-                        VesselMetadata meta = buildMetadata(cols, colIndex, pos.getMmsi(), pos.getTimestamp());
+                        var meta = buildMetadata(cols, colIndex, pos.mmsi(), pos.timestamp());
                         if (meta != null) {
                             onVessel.accept(meta);
                             vesselCount++;
@@ -212,19 +207,19 @@ public class CsvParser {
 
     /** Convenience method: returns only positions (backward compatible). */
     public List<AisPosition> parse(Path csvFile) throws IOException {
-        return parseFull(csvFile).getPositions();
+        return parseFull(csvFile).positions();
     }
 
     /** Convenience method: returns only positions (backward compatible). */
     public List<AisPosition> parse(InputStream is, String sourceName) throws IOException {
-        return parseFull(is, sourceName).getPositions();
+        return parseFull(is, sourceName).positions();
     }
 
     // ---- Header / column resolution ----------------------------------------
 
     private Map<String, Integer> parseHeader(String header) {
-        Map<String, Integer> index = new HashMap<>();
-        String[] cols = splitCsvLine(header);
+        var index = new HashMap<String, Integer>();
+        var cols = splitCsvLine(header);
         for (int i = 0; i < cols.length; i++) {
             index.put(cols[i].trim().replaceAll("^#\\s*", "").toLowerCase(Locale.ROOT), i);
         }
@@ -254,16 +249,16 @@ public class CsvParser {
     // ---- Position building --------------------------------------------------
 
     private AisPosition buildPosition(String[] cols, Map<String, Integer> idx) {
-        long mmsi = parseLong(cols, resolveColumn(idx, "mmsi"));
-        Instant ts = parseTimestamp(cols, resolveColumn(idx, "timestamp", "basedatetime", "time", "datetime"));
-        double lat = parseDouble(cols, resolveColumn(idx, "lat", "latitude"));
-        double lon = parseDouble(cols, resolveColumn(idx, "lon", "lng", "longitude"));
-        Float sog = parseFloat(cols, resolveColumn(idx, "sog"));
-        Float cog = parseFloat(cols, resolveColumn(idx, "cog"));
-        Integer heading = parseInt(cols, resolveColumn(idx, "heading"));
-        Integer navStatus = parseInt(cols, resolveColumn(idx, "nav_status", "navstatus", "status", "navigational status"));
-        Float rot = parseFloat(cols, resolveColumn(idx, "rot"));
-        Integer msgType = parseInt(cols, resolveColumn(idx, "msg_type", "msgtype", "type"));
+        var mmsi        = parseLong(cols, resolveColumn(idx, "mmsi"));
+        var ts          = parseTimestamp(cols, resolveColumn(idx, "timestamp", "basedatetime", "time", "datetime"));
+        var lat         = parseDouble(cols, resolveColumn(idx, "lat", "latitude"));
+        var lon         = parseDouble(cols, resolveColumn(idx, "lon", "lng", "longitude"));
+        var sog         = parseFloat(cols, resolveColumn(idx, "sog"));
+        var cog         = parseFloat(cols, resolveColumn(idx, "cog"));
+        var heading     = parseInt(cols, resolveColumn(idx, "heading"));
+        var navStatus   = parseInt(cols, resolveColumn(idx, "nav_status", "navstatus", "status", "navigational status"));
+        var rot         = parseFloat(cols, resolveColumn(idx, "rot"));
+        var msgType     = parseInt(cols, resolveColumn(idx, "msg_type", "msgtype", "type"));
 
         return new AisPosition(mmsi, ts, lat, lon, sog, cog, heading, navStatus, rot, msgType);
     }
@@ -272,18 +267,18 @@ public class CsvParser {
 
     private VesselMetadata buildMetadata(String[] cols, Map<String, Integer> idx,
                                          long mmsi, Instant ts) {
-        int imoIdx      = resolveColumn(idx, "imo");
-        int callsignIdx = resolveColumn(idx, "callsign");
-        int nameIdx     = resolveColumn(idx, "name");
-        int typeIdx     = resolveColumn(idx, "ship type", "shiptype");
-        int widthIdx    = resolveColumn(idx, "width");
-        int lengthIdx   = resolveColumn(idx, "length");
-        int draughtIdx  = resolveColumn(idx, "draught");
-        int destIdx     = resolveColumn(idx, "destination");
-        int sizeAIdx    = resolveColumn(idx, "a");
-        int sizeBIdx    = resolveColumn(idx, "b");
-        int sizeCIdx    = resolveColumn(idx, "c");
-        int sizeDIdx    = resolveColumn(idx, "d");
+        var imoIdx      = resolveColumn(idx, "imo");
+        var callsignIdx = resolveColumn(idx, "callsign");
+        var nameIdx     = resolveColumn(idx, "name");
+        var typeIdx     = resolveColumn(idx, "ship type", "shiptype");
+        var widthIdx    = resolveColumn(idx, "width");
+        var lengthIdx   = resolveColumn(idx, "length");
+        var draughtIdx  = resolveColumn(idx, "draught");
+        var destIdx     = resolveColumn(idx, "destination");
+        var sizeAIdx    = resolveColumn(idx, "a");
+        var sizeBIdx    = resolveColumn(idx, "b");
+        var sizeCIdx    = resolveColumn(idx, "c");
+        var sizeDIdx    = resolveColumn(idx, "d");
 
         // If none of the metadata columns are present in this file, skip entirely
         if (imoIdx < 0 && callsignIdx < 0 && nameIdx < 0 && typeIdx < 0
@@ -291,10 +286,10 @@ public class CsvParser {
             return null;
         }
 
-        Long    imo          = parseImo(cols, imoIdx);
-        String  vesselName   = nullIfUnknown(cell(cols, nameIdx));
-        String  callsign     = nullIfUnknown(cell(cols, callsignIdx));
-        String  shipTypeRaw  = nullIfUnknown(cell(cols, typeIdx));
+        var imo          = parseImo(cols, imoIdx);
+        var vesselName   = nullIfUnknown(cell(cols, nameIdx));
+        var callsign     = nullIfUnknown(cell(cols, callsignIdx));
+        var shipTypeRaw  = nullIfUnknown(cell(cols, typeIdx));
         Integer shipType     = null;
         String  shipTypeDesc = null;
         if (shipTypeRaw != null) {
@@ -304,20 +299,20 @@ public class CsvParser {
                 shipTypeDesc = shipTypeRaw;
             }
         }
-        Float   lengthM      = parseFloat(cols, lengthIdx);
-        Float   beamM        = parseFloat(cols, widthIdx);
-        Float   draughtM     = parseFloat(cols, draughtIdx);
-        String  destination  = nullIfUnknown(cell(cols, destIdx));
+        var lengthM      = parseFloat(cols, lengthIdx);
+        var beamM        = parseFloat(cols, widthIdx);
+        var draughtM     = parseFloat(cols, draughtIdx);
+        var destination  = nullIfUnknown(cell(cols, destIdx));
 
         // Fallback: derive length/beam from GPS antenna offsets A+B / C+D
         if (lengthM == null) {
-            Float a = parseFloat(cols, sizeAIdx);
-            Float b = parseFloat(cols, sizeBIdx);
+            var a = parseFloat(cols, sizeAIdx);
+            var b = parseFloat(cols, sizeBIdx);
             if (a != null && b != null) lengthM = a + b;
         }
         if (beamM == null) {
-            Float c = parseFloat(cols, sizeCIdx);
-            Float d = parseFloat(cols, sizeDIdx);
+            var c = parseFloat(cols, sizeCIdx);
+            var d = parseFloat(cols, sizeDIdx);
             if (c != null && d != null) beamM = c + d;
         }
 
@@ -338,17 +333,17 @@ public class CsvParser {
      */
     public static VesselMetadata mergeMetadata(VesselMetadata existing, VesselMetadata incoming) {
         return new VesselMetadata(
-                existing.getMmsi(),
-                firstNonNull(incoming.getImo(),          existing.getImo()),
-                firstNonNull(incoming.getVesselName(),   existing.getVesselName()),
-                firstNonNull(incoming.getCallsign(),     existing.getCallsign()),
-                firstNonNull(incoming.getShipType(),     existing.getShipType()),
-                firstNonNull(incoming.getShipTypeDesc(), existing.getShipTypeDesc()),
-                firstNonNull(incoming.getLengthM(),      existing.getLengthM()),
-                firstNonNull(incoming.getBeamM(),        existing.getBeamM()),
-                firstNonNull(incoming.getDraughtM(),     existing.getDraughtM()),
-                firstNonNull(incoming.getDestination(),  existing.getDestination()),
-                incoming.getLastSeen()
+                existing.mmsi(),
+                firstNonNull(incoming.imo(),          existing.imo()),
+                firstNonNull(incoming.vesselName(),   existing.vesselName()),
+                firstNonNull(incoming.callsign(),     existing.callsign()),
+                firstNonNull(incoming.shipType(),     existing.shipType()),
+                firstNonNull(incoming.shipTypeDesc(), existing.shipTypeDesc()),
+                firstNonNull(incoming.lengthM(),      existing.lengthM()),
+                firstNonNull(incoming.beamM(),        existing.beamM()),
+                firstNonNull(incoming.draughtM(),     existing.draughtM()),
+                firstNonNull(incoming.destination(),  existing.destination()),
+                incoming.lastSeen()
         );
     }
 
@@ -359,7 +354,7 @@ public class CsvParser {
     // ---- Column resolution -------------------------------------------------
 
     private int resolveColumn(Map<String, Integer> idx, String... names) {
-        for (String name : names) {
+        for (var name : names) {
             Integer i = idx.get(name);
             if (i != null) return i;
         }
@@ -378,7 +373,7 @@ public class CsvParser {
 
     private Float parseFloat(String[] cols, int colIdx) {
         if (colIdx < 0) return null;
-        String v = cell(cols, colIdx);
+        var v = cell(cols, colIdx);
         if (v.isEmpty()) return null;
         try {
             return Float.parseFloat(v);
@@ -389,7 +384,7 @@ public class CsvParser {
 
     private Integer parseInt(String[] cols, int colIdx) {
         if (colIdx < 0) return null;
-        String v = cell(cols, colIdx);
+        var v = cell(cols, colIdx);
         if (v.isEmpty()) return null;
         try {
             // Tolerate float-formatted integers (e.g. "1.0")
@@ -401,7 +396,7 @@ public class CsvParser {
 
     private Long parseImo(String[] cols, int colIdx) {
         if (colIdx < 0) return null;
-        String v = nullIfUnknown(cell(cols, colIdx));
+        var v = nullIfUnknown(cell(cols, colIdx));
         if (v == null) return null;
         try {
             return Long.parseLong(v);
@@ -411,8 +406,8 @@ public class CsvParser {
     }
 
     private Instant parseTimestamp(String[] cols, int colIdx) {
-        String raw = cell(cols, colIdx);
-        for (DateTimeFormatter fmt : TIMESTAMP_FORMATS) {
+        var raw = cell(cols, colIdx);
+        for (var fmt : TIMESTAMP_FORMATS) {
             try {
                 // Try direct ISO instant first
                 if (raw.endsWith("Z") || raw.contains("+")) {
@@ -438,22 +433,18 @@ public class CsvParser {
      */
     private static String nullIfUnknown(String v) {
         if (v == null || v.isEmpty()) return null;
-        switch (v.toLowerCase(Locale.ROOT)) {
-            case "unknown":
-            case "undefined":
-            case "n/a":
-                return null;
-            default:
-                return v;
-        }
+        return switch (v.toLowerCase(Locale.ROOT)) {
+            case "unknown", "undefined", "n/a" -> null;
+            default -> v;
+        };
     }
 
     // ---- CSV tokenizer (handles double-quoted fields) ----------------------
 
     static String[] splitCsvLine(String line) {
-        List<String> tokens = new ArrayList<>();
-        StringBuilder sb = new StringBuilder();
-        boolean inQuotes = false;
+        var tokens = new ArrayList<String>();
+        var sb = new StringBuilder();
+        var inQuotes = false;
         for (int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
             if (c == '"') {

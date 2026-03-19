@@ -57,12 +57,12 @@ public class Validator {
      */
     public boolean accept(AisPosition p) {
         stats.total++;
-        if (!isValidMmsi(p.getMmsi())) { stats.invalidMmsi++; return false; }
-        if (!isValidCoords(p.getLat(), p.getLon())) { stats.invalidCoords++; return false; }
-        if (isNullIsland(p.getLat(), p.getLon())) { stats.nullIsland++; return false; }
-        if (isSOGExceeded(p.getSog())) { stats.sogExceeded++; return false; }
+        if (!isValidMmsi(p.mmsi())) { stats.invalidMmsi++; return false; }
+        if (!isValidCoords(p.lat(), p.lon())) { stats.invalidCoords++; return false; }
+        if (isNullIsland(p.lat(), p.lon())) { stats.nullIsland++; return false; }
+        if (isSOGExceeded(p.sog())) { stats.sogExceeded++; return false; }
 
-        long dedupKey = (p.getMmsi() << 32) | (p.getTimestamp().getEpochSecond() & 0xFFFFFFFFL);
+        long dedupKey = (p.mmsi() << 32) | (p.timestamp().getEpochSecond() & 0xFFFFFFFFL);
         if (!seen.add(dedupKey)) { stats.duplicates++; return false; }
 
         stats.accepted++;
@@ -70,8 +70,8 @@ public class Validator {
     }
 
     public List<AisPosition> validate(List<AisPosition> raw) {
-        List<AisPosition> valid = new ArrayList<>(raw.size());
-        for (AisPosition p : raw) {
+        var valid = new ArrayList<AisPosition>(raw.size());
+        for (var p : raw) {
             if (accept(p)) valid.add(p);
         }
         log.info("Validation: {}", stats);

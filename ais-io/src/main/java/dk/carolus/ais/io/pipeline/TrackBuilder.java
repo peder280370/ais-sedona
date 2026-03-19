@@ -2,21 +2,15 @@ package dk.carolus.ais.io.pipeline;
 
 import dk.carolus.ais.io.model.AisPosition;
 import dk.carolus.ais.io.model.AisTrack;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.io.ByteOrderValues;
 import org.locationtech.jts.io.WKBWriter;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Builds voyage track segments from validated AIS positions.
@@ -48,13 +42,11 @@ public class TrackBuilder {
     // -----------------------------------------------------------------------
 
     /** Aggregated result from a single {@link #build} call. */
-    @Value
-    public static class BuildResult {
-        List<AisTrack> tracks;
-        int inputPositions;
-        int downsampledPositions;
-        int skippedSinglePoint;
-    }
+    public record BuildResult(
+            List<AisTrack> tracks,
+            int inputPositions,
+            int downsampledPositions,
+            int skippedSinglePoint) {}
 
     // -----------------------------------------------------------------------
 
@@ -66,9 +58,9 @@ public class TrackBuilder {
      */
     public BuildResult build(List<AisPosition> positions) {
         // Group by MMSI
-        Map<Long, List<AisPosition>> byMmsi = new LinkedHashMap<>();
-        for (AisPosition p : positions) {
-            byMmsi.computeIfAbsent(p.getMmsi(), k -> new ArrayList<>()).add(p);
+        var byMmsi = new LinkedHashMap<Long, List<AisPosition>>();
+        for (var p : positions) {
+            byMmsi.computeIfAbsent(p.mmsi(), k -> new ArrayList<>()).add(p);
         }
         return buildFromGrouped(byMmsi, positions.size());
     }
@@ -80,26 +72,26 @@ public class TrackBuilder {
      * @return aggregated build result
      */
     public BuildResult buildFromGrouped(Map<Long, List<AisPosition>> byMmsi) {
-        int totalInput = 0;
-        for (List<AisPosition> list : byMmsi.values()) totalInput += list.size();
+        var totalInput = 0;
+        for (var list : byMmsi.values()) totalInput += list.size();
         return buildFromGrouped(byMmsi, totalInput);
     }
 
     private BuildResult buildFromGrouped(Map<Long, List<AisPosition>> byMmsi, int inputCount) {
-        List<AisTrack> allTracks = new ArrayList<>();
-        int totalDownsampled = 0;
-        int totalSkipped = 0;
-        WKBWriter wkbWriter = new WKBWriter(2, ByteOrderValues.LITTLE_ENDIAN);
+        var allTracks = new ArrayList<AisTrack>();
+        var totalDownsampled = 0;
+        var totalSkipped = 0;
+        var wkbWriter = new WKBWriter(2, ByteOrderValues.LITTLE_ENDIAN);
 
         for (Map.Entry<Long, List<AisPosition>> entry : byMmsi.entrySet()) {
-            List<AisPosition> sorted = new ArrayList<>(entry.getValue());
-            sorted.sort(Comparator.comparing(AisPosition::getTimestamp));
+            var sorted = new ArrayList<>(entry.getValue());
+            sorted.sort(Comparator.comparing(AisPosition::timestamp));
 
-            List<AisPosition> downsampled = downsample(sorted);
+            var downsampled = downsample(sorted);
             totalDownsampled += (sorted.size() - downsampled.size());
 
             int[] skipped = {0};
-            List<AisTrack> tracks = segment(downsampled, skipped, wkbWriter);
+            var tracks = segment(downsampled, skipped, wkbWriter);
             allTracks.addAll(tracks);
             totalSkipped += skipped[0];
         }
@@ -113,14 +105,14 @@ public class TrackBuilder {
     // ---- Downsampling -----------------------------------------------------
 
     private static List<AisPosition> downsample(List<AisPosition> sorted) {
-        List<AisPosition> kept = new ArrayList<>();
+        var kept = new ArrayList<AisPosition>();
         Instant lastKept = null;
-        for (AisPosition p : sorted) {
+        for (var p : sorted) {
             if (lastKept == null
-                    || java.time.Duration.between(lastKept, p.getTimestamp()).getSeconds()
+                    || java.time.Duration.between(lastKept, p.timestamp()).getSeconds()
                        >= DOWNSAMPLE_INTERVAL_SEC) {
                 kept.add(p);
-                lastKept = p.getTimestamp();
+                lastKept = p.timestamp();
             }
         }
         return kept;
@@ -131,20 +123,20 @@ public class TrackBuilder {
     private static List<AisTrack> segment(List<AisPosition> positions,
                                           int[] skippedOut,
                                           WKBWriter wkbWriter) {
-        List<AisTrack> tracks = new ArrayList<>();
-        List<AisPosition> seg = new ArrayList<>();
+        var tracks = new ArrayList<AisTrack>();
+        var seg = new ArrayList<AisPosition>();
 
         // Port-call tracking state (indices into `seg`)
-        int portCallStart = -1;  // index of first slow position in current run
-        int portCallCount = 0;   // length of current slow run
+        var portCallStart = -1;  // index of first slow position in current run
+        var portCallCount = 0;   // length of current slow run
 
-        for (AisPosition curr : positions) {
+        for (var curr : positions) {
             if (!seg.isEmpty()) {
-                AisPosition prev = seg.get(seg.size() - 1);
-                long gapSec = java.time.Duration.between(
-                        prev.getTimestamp(), curr.getTimestamp()).getSeconds();
+                var prev = seg.getLast();
+                var gapSec = java.time.Duration.between(
+                        prev.timestamp(), curr.timestamp()).getSeconds();
 
-                boolean split = false;
+                var split = false;
 
                 // Rule 1: time gap
                 if (gapSec > GAP_THRESHOLD_SEC) {
@@ -165,10 +157,10 @@ public class TrackBuilder {
 
             // Add current position to segment
             seg.add(curr);
-            int currIdx = seg.size() - 1;
+            var currIdx = seg.size() - 1;
 
             // Rule 3: port-call detection
-            Float sog = curr.getSog();
+            var sog = curr.sog();
             if (sog != null && sog < PORT_CALL_MAX_SOG) {
                 if (portCallStart == -1) {
                     portCallStart = currIdx;
@@ -178,15 +170,15 @@ public class TrackBuilder {
                 }
 
                 if (portCallCount >= PORT_CALL_MIN_POINTS) {
-                    AisPosition firstSlow = seg.get(portCallStart);
-                    long durationSec = java.time.Duration.between(
-                            firstSlow.getTimestamp(), curr.getTimestamp()).getSeconds();
+                    var firstSlow = seg.get(portCallStart);
+                    var durationSec = java.time.Duration.between(
+                            firstSlow.timestamp(), curr.timestamp()).getSeconds();
 
                     if (durationSec >= PORT_CALL_MIN_DURATION_SEC) {
                         // Emit pre-port-call segment [0..portCallStart-1]
-                        List<AisPosition> prePart = new ArrayList<>(seg.subList(0, portCallStart));
+                        var prePart = new ArrayList<>(seg.subList(0, portCallStart));
                         // New segment starts at portCallStart
-                        List<AisPosition> newSeg = new ArrayList<>(seg.subList(portCallStart, seg.size()));
+                        var newSeg = new ArrayList<>(seg.subList(portCallStart, seg.size()));
 
                         emitSegment(prePart, tracks, skippedOut, wkbWriter);
                         seg = newSeg;
@@ -218,20 +210,20 @@ public class TrackBuilder {
         }
 
         Coordinate[] coords = new Coordinate[seg.size()];
-        for (int i = 0; i < seg.size(); i++) {
-            AisPosition p = seg.get(i);
-            coords[i] = new Coordinate(p.getLon(), p.getLat());
+        for (var i = 0; i < seg.size(); i++) {
+            var p = seg.get(i);
+            coords[i] = new Coordinate(p.lon(), p.lat());
         }
-        LineString ls = GEOM_FACTORY.createLineString(coords);
-        byte[] wkb = wkbWriter.write(ls);
+        var ls = GEOM_FACTORY.createLineString(coords);
+        var wkb = wkbWriter.write(ls);
 
-        Instant startTime = seg.get(0).getTimestamp();
-        Instant endTime   = seg.get(seg.size() - 1).getTimestamp();
-        long mmsi         = seg.get(0).getMmsi();
-        String voyageId   = mmsi + "_" + startTime.getEpochSecond();
+        var startTime  = seg.getFirst().timestamp();
+        var endTime    = seg.getLast().timestamp();
+        var mmsi       = seg.getFirst().mmsi();
+        var voyageId   = mmsi + "_" + startTime.getEpochSecond();
 
-        Float avgSog     = computeAvgSog(seg);
-        Float distanceNm = computeDistanceNm(seg);
+        var avgSog     = computeAvgSog(seg);
+        var distanceNm = computeDistanceNm(seg);
 
         tracks.add(new AisTrack(mmsi, voyageId, wkb, startTime, endTime,
                 seg.size(), avgSog, distanceNm));
@@ -240,16 +232,16 @@ public class TrackBuilder {
     // ---- Helpers ---------------------------------------------------------
 
     private static boolean isStationaryStatus(AisPosition p) {
-        Integer ns = p.getNavStatus();
+        var ns = p.navStatus();
         return ns != null && (ns == NAV_STATUS_ANCHORED || ns == NAV_STATUS_MOORED);
     }
 
     private static Float computeAvgSog(List<AisPosition> seg) {
-        double sum = 0;
-        int count = 0;
-        for (AisPosition p : seg) {
-            if (p.getSog() != null) {
-                sum += p.getSog();
+        var sum = 0;
+        var count = 0;
+        for (var p : seg) {
+            if (p.sog() != null) {
+                sum += p.sog();
                 count++;
             }
         }
@@ -258,11 +250,11 @@ public class TrackBuilder {
 
     private static Float computeDistanceNm(List<AisPosition> seg) {
         if (seg.size() < 2) return null;
-        double totalNm = 0;
+        var totalNm = 0.0;
         for (int i = 1; i < seg.size(); i++) {
-            AisPosition a = seg.get(i - 1);
-            AisPosition b = seg.get(i);
-            totalNm += haversineNm(a.getLat(), a.getLon(), b.getLat(), b.getLon());
+            var a = seg.get(i - 1);
+            var b = seg.get(i);
+            totalNm += haversineNm(a.lat(), a.lon(), b.lat(), b.lon());
         }
         return (float) totalNm;
     }
@@ -272,12 +264,12 @@ public class TrackBuilder {
      */
     static double haversineNm(double lat1, double lon1, double lat2, double lon2) {
         final double R = 6_371_000.0; // Earth radius in metres
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+        var dLat = Math.toRadians(lat2 - lat1);
+        var dLon = Math.toRadians(lon2 - lon1);
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                   * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c / 1_852.0; // metres → nautical miles
     }
 }
