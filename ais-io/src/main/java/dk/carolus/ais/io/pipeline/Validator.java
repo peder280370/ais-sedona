@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * Validates and deduplicates a list of raw {@link AisPosition} records.
  *
- * <p>Validation rules (from AIS_PLAN.md §4 and §7):
+ * <p>Validation rules:
  * <ul>
  *   <li>Drop lat outside [-90, 90] or lon outside [-180, 180]</li>
  *   <li>Drop null-island positions (lat=0, lon=0)</li>

@@ -297,5 +297,3 @@ ais-backend   (this module)
           └── uses: NmeaParser, CsvParser, Validator, GeoParquetWriter,
                     VesselMetadataWriter, TrackBuilder, TrackWriter
 ```
-
-See the root [`README.md`](../README.md) and [`AIS_PLAN.md`](../AIS_PLAN.md) for full project context.

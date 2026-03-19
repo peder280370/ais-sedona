@@ -50,7 +50,7 @@ data/
 # Build both Java modules
 cd ais-io && mvn package -q && cd ..
 cd ais-backend && mvn package -DskipTests && cd ..
-cd ais-frontend && npm install && cd ..
+cd ais-frontend && npm run build && cd ..
 
 # Start Spark + backend + frontend
 docker compose up
@@ -58,4 +58,5 @@ docker compose up
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8080
+- Backend Swagger UI: http://localhost:8080/q/swagger-ui/
 - Spark UI: http://localhost:4040
