@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "VesselMetadata",
+  "namespace": "dk.carolus.ais.io",
+  "doc": "One row per AIS static data report (message types 5 and 24).",
+  "fields": [
+    {"name": "mmsi",          "type": "long",   "doc": "9-digit vessel identifier"},
+    {"name": "imo",           "type": ["null", "long"],   "default": null, "doc": "IMO number"},
+    {"name": "vessel_name",   "type": ["null", "string"], "default": null, "doc": "Vessel name (trimmed)"},
+    {"name": "callsign",      "type": ["null", "string"], "default": null, "doc": "Radio callsign (trimmed)"},
+    {"name": "ship_type",     "type": ["null", "int"],    "default": null, "doc": "ITU ship type code"},
+    {"name": "ship_type_desc","type": ["null", "string"], "default": null, "doc": "Ship type name from AIS enum"},
+    {"name": "length_m",      "type": ["null", "float"],  "default": null, "doc": "Overall length in metres (bow + stern dimensions)"},
+    {"name": "beam_m",        "type": ["null", "float"],  "default": null, "doc": "Beam in metres (port + starboard dimensions)"},
+    {"name": "draught_m",     "type": ["null", "float"],  "default": null, "doc": "Draught in metres"},
+    {"name": "destination",   "type": ["null", "string"], "default": null, "doc": "Destination (trimmed)"},
+    {"name": "last_seen_us",  "type": ["null", {"type": "long", "logicalType": "timestamp-micros"}], "default": null, "doc": "UTC timestamp of this static message in microseconds since epoch"}
+  ]
+}

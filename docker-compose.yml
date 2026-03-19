@@ -1,0 +1,55 @@
+services:
+  spark:
+    image: apache/spark:3.5.1
+    user: root
+    command: >
+      /opt/spark/sbin/start-connect-server.sh --wait
+      --packages org.apache.spark:spark-connect_2.12:3.5.1,org.apache.sedona:sedona-spark-3.5_2.12:1.8.1,org.datasyslab:geotools-wrapper:1.8.1-33.1
+      --conf spark.serializer=org.apache.spark.serializer.KryoSerializer
+      --conf spark.kryo.registrator=org.apache.sedona.core.serde.SedonaKryoRegistrator
+      --conf spark.sql.extensions=org.apache.sedona.sql.SedonaSqlExtensions
+      --conf spark.sql.files.maxPartitionBytes=536870912
+      --conf spark.sql.parquet.filterPushdown=true
+      --conf spark.sql.parquet.mergeSchema=false
+    ports:
+      - "15002:15002"
+      - "4040:4040"
+    volumes:
+      - ais_data:/data
+      - spark_ivy_cache:/root/.ivy2
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "cat /dev/null > /dev/tcp/localhost/15002"]
+      interval: 15s
+      start_period: 90s
+      retries: 10
+
+  backend:
+    image: eclipse-temurin:17-jre
+    working_dir: /app
+    command: java --add-opens=java.base/java.nio=ALL-UNNAMED -Xms256m -Xmx8g -jar quarkus-run.jar
+    ports:
+      - "8080:8080"
+    volumes:
+      - ais_data:/data
+      - ./ais-backend/target/quarkus-app:/app:ro
+    environment:
+      AIS_DATA_DIR: /data
+      SPARK_CONNECT_URL: sc://spark:15002
+    depends_on:
+      spark:
+        condition: service_healthy
+
+  ais-frontend:
+    build:
+      context: ./ais-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  ais_data:
+  spark_ivy_cache:

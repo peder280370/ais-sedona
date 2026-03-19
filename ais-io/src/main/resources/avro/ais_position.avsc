@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "AisPosition",
+  "namespace": "dk.carolus.ais.io",
+  "doc": "One row per AIS position report (message types 1/2/3/18).",
+  "fields": [
+    {"name": "mmsi",         "type": "long",   "doc": "9-digit vessel identifier"},
+    {"name": "timestamp_us", "type": {"type": "long", "logicalType": "timestamp-micros"}, "doc": "UTC timestamp in microseconds since epoch"},
+    {"name": "geometry",     "type": "bytes",  "doc": "WKB-encoded WGS84 Point (lon, lat)"},
+    {"name": "sog",          "type": ["null", "float"],   "default": null, "doc": "Speed over ground (knots)"},
+    {"name": "cog",          "type": ["null", "float"],   "default": null, "doc": "Course over ground (degrees)"},
+    {"name": "heading",      "type": ["null", "int"],     "default": null, "doc": "True heading (0-359; 511 = not available)"},
+    {"name": "nav_status",   "type": ["null", "int"],     "default": null, "doc": "Navigation status (0=underway, 1=anchored, ...)"},
+    {"name": "rot",          "type": ["null", "float"],   "default": null, "doc": "Rate of turn"},
+    {"name": "msg_type",     "type": ["null", "int"],     "default": null, "doc": "AIS message type (1/2/3/18)"}
+  ]
+}

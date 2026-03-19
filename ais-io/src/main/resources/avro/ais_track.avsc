@@ -1,0 +1,13 @@
+{
+  "type": "record", "name": "AisTrack", "namespace": "dk.carolus.ais.io",
+  "fields": [
+    {"name": "mmsi",        "type": "long"},
+    {"name": "voyage_id",   "type": "string"},
+    {"name": "geometry",    "type": "bytes"},
+    {"name": "start_time",  "type": {"type": "long", "logicalType": "timestamp-micros"}},
+    {"name": "end_time",    "type": {"type": "long", "logicalType": "timestamp-micros"}},
+    {"name": "point_count", "type": "int"},
+    {"name": "avg_sog",     "type": ["null", "float"], "default": null},
+    {"name": "distance_nm", "type": ["null", "float"], "default": null}
+  ]
+}

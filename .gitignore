@@ -1,0 +1,35 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+.mvn/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Node / Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# IDE
+.idea/
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+*.parquet
+*.nmea
+
+# Logs
+*.log
+logs/
