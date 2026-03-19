@@ -2,7 +2,7 @@
 
 A pipeline for ingesting raw AIS (Automatic Identification System) maritime data, transforming it into partitioned GeoParquet files, and querying with Apache Sedona.
 
-Full architecture and implementation details: [`AIS_PLAN.md`](AIS_PLAN.md)
+![AIS Sedona Test Screenshot](ais-sedona-screenshot.jpeg)
 
 ## What it does
 
