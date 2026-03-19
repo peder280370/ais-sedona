@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus.platform</groupId>
         <artifactId>quarkus-bom</artifactId>
-        <version>3.9.5</version>
+        <version>3.32.1</version>
         <relativePath/>
     </parent>
 
@@ -16,7 +16,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -57,8 +57,8 @@
         <!-- Spark Connect client (remote Spark session) -->
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-connect-client-jvm_2.12</artifactId>
-            <version>3.5.1</version>
+            <artifactId>spark-connect-client-jvm_2.13</artifactId>
+            <version>4.0.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.grpc</groupId>
@@ -79,7 +79,7 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.12.18</version>
+            <version>2.13.16</version>
         </dependency>
 
         <!-- AIS pipeline library -->
@@ -106,7 +106,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.38</version>
+            <version>1.18.44</version>
             <scope>provided</scope>
         </dependency>
 
@@ -139,7 +139,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.38</version>
+                            <version>1.18.44</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
@@ -147,7 +147,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>3.9.5</version>
+                <version>3.32.1</version>
                 <extensions>true</extensions>
                 <dependencies>
                     <dependency>

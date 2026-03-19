@@ -5,7 +5,6 @@ target/
 *.war
 *.ear
 *.iml
-.mvn/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -29,6 +28,7 @@ Thumbs.db
 # Data
 *.parquet
 *.nmea
+ais-csv/aisdk-2026-03-14.zip
 
 # Logs
 *.log

@@ -8,7 +8,7 @@ JAR="$SCRIPT_DIR/ais-io/target/ais-io-1.0-SNAPSHOT-jar-with-dependencies.jar"
 for arg in "$@"; do
   if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
     cat <<'EOF'
-Usage: ais-ingest.sh <input> <output-dir> [OPTIONS]
+Usage: ais-io.sh <input> <output-dir> [OPTIONS]
 
 Ingest AIS data (CSV or NMEA) and write partitioned GeoParquet output.
 
@@ -39,11 +39,11 @@ Output layout:
   <output-dir>/vessels/part-00000.parquet
 
 Examples:
-  ais-ingest.sh data.nmea /tmp/out
-  ais-ingest.sh data.csv /tmp/out --limit 1000
-  ais-ingest.sh archive.zip /tmp/out --format csv --date 2026-03-14
-  ais-ingest.sh data.csv.zip /tmp/out --limit 500
-  ais-ingest.sh 2025-03-02 ./output --format dma
+  ais-io.sh data.nmea /tmp/out
+  ais-io.sh data.csv /tmp/out --limit 1000
+  ais-io.sh archive.zip /tmp/out --format csv --date 2026-03-14
+  ais-io.sh data.csv.zip /tmp/out --limit 500
+  ais-io.sh 2025-03-02 ./output --format dma
 
 Build the JAR first if not already done:
   cd ais-io && mvn clean package
@@ -58,4 +58,11 @@ if [[ ! -f "$JAR" ]]; then
   exit 1
 fi
 
-exec java -jar "$JAR" "$@"
+exec java \
+  --add-opens java.base/java.lang=ALL-UNNAMED \
+  --add-opens java.base/java.io=ALL-UNNAMED \
+  --add-opens java.base/java.util=ALL-UNNAMED \
+  --add-opens java.base/java.net=ALL-UNNAMED \
+  --add-opens java.base/java.nio=ALL-UNNAMED \
+  --add-opens java.base/sun.nio.ch=ALL-UNNAMED \
+  -jar "$JAR" "$@"
