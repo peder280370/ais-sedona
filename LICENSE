@@ -1,0 +1,29 @@
+None
+
+Got Claude code to investigate dependencies, and since this is a non-commercial test project, we're good...
+
+Claude Code Investigation:
+--------------------------
+
+  Critical Issue: dk.tbsalling:aismessages
+
+  This dependency (used in ais-io for NMEA parsing) is licensed under CC BY-NC-SA 3.0, which prohibits commercial use.
+  If this project is used commercially, you need to either:
+  1. Contact the author (Thomas Borg Salling) for a commercial license
+  2. Replace it with a commercially-licensed AIS parser
+
+  All Other Dependencies: Clean
+
+  ┌────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────┐
+  │      License       │                                       Dependencies                                        │
+  ├────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Apache 2.0         │ Hadoop, Parquet, Avro, Spark, Quarkus, H3, Guava, Vite, TypeScript                        │
+  ├────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+  │ MIT                │ React, Logback (partially), Lombok, SLF4J                                                 │
+  ├────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+  │ BSD-2-Clause       │ OpenLayers (ol)                                                                           │
+  ├────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+  │ EPL 2.0 + EDL      │ JTS Core (LocationTech)                                                                   │
+  ├────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+  │ EPL 1.0 + LGPL 2.1 │ Logback (using as a library is fine; LGPL only restricts modifications to logback itself) │
+  └────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────┘
