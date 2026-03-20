@@ -23,6 +23,8 @@ Three output tables:
 Ideas for next steps (ignoring for a moment that I'm running everything on a Mac Mini):
 - Ditch the downsampled tracks persisted to GeoParquet. This takes up too much memory when ingesting large AIS files, 
   and really, tracks should be computed on-the-fly for selected vessels.
+- Improve data and code quality - not always happy with Claude Code style.
+  Also improve GUI (not all AIS Transponders are vessels) and add functions.
 - Experiment with Apache Iceberg inbetween GeoParquet and Sedona - more of a Lakehouse Architecture.
 - Automated imports of historical AIS from DMA, and possibly other sources. Consider Apache AirFlow
 - Try Python instead of Java, Jupyter Notebooks...
