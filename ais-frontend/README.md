@@ -2,6 +2,10 @@
 
 React + OpenLayers UI for the AIS vessel tracking pipeline. Displays live vessel positions on a full-screen map with filtering by date, MMSI, and vessel name.
 
+![AIS Sedona Test - Active Vessels](assets/ais-sedona-screenshot.jpeg)
+
+![AIS Sedona Test - Tracks](assets/ais-sedona-screenshot-2.jpeg)
+
 ## Stack
 
 - **React 18** + **TypeScript**
@@ -49,6 +53,7 @@ src/
 - **Filter panel** — date range, MMSI, vessel name with autocomplete, tracks toggle
 - **Vessel popup** — click any vessel to see name, SOG, COG, nav status, destination
 - **Tracks layer** — dashed voyage lines, toggled via filter panel
+- **Play mode** — ▶ button next to the time picker auto-advances the selected time by 5 minutes every 5 seconds, animating vessel movement through the day; press ⏸ to pause
 - All API calls use `AbortController` to cancel in-flight Spark queries on parameter change
 
 ## Environment

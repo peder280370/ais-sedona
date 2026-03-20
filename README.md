@@ -3,7 +3,7 @@
 A pipeline for ingesting raw AIS (Automatic Identification System) maritime data, 
 transforming it into partitioned GeoParquet files, and querying with Apache Sedona.
 
-![AIS Sedona Test Screenshot](assets/ais-sedona-screenshot.jpeg)
+![AIS Sedona Test Screenshot](ais-frontend/assets/ais-sedona-screenshot.jpeg)
 
 ## What it does
 
@@ -18,12 +18,21 @@ Three output tables:
 - **Vessel Metadata** — slowly-changing dimension, one row per MMSI
 - **Tracks** — derived voyage segments (LineString geometries), partitioned by month
 
+## Next Steps
+
+Ideas for next steps (ignoring for a moment that I'm running everything on a Mac Mini):
+- Ditch the downsampled tracks persisted to GeoParquet. This takes up too much memory when ingesting large AIS files, 
+  and really, tracks should be computed on-the-fly for selected vessels.
+- Experiment with Apache Iceberg inbetween GeoParquet and Sedona - more of a Lakehouse Architecture.
+- Automated imports of historical AIS from DMA, and possibly other sources. Consider Apache AirFlow
+- Try Python instead of Java, Jupyter Notebooks...
+
 ## Technology
 
 | Layer | Stack |
 |---|---|
 | Ingestion | Plain Java — `aismessages` + JTS + Apache Parquet + H3-Java |
-| Query | Apache Spark 4.0 + Apache Sedona 1.8.1 |
+| Query | Apache Spark 4.0.1 + Apache Sedona 1.8.1 |
 | API | Quarkus 3.32.1 (Spark Connect client) |
 | UI | React 18 + OpenLayers 9 |
 

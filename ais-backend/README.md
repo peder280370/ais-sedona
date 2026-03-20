@@ -243,12 +243,12 @@ docker compose up
 ```
 
 This starts:
-- **spark** — Spark 4.0 with Sedona 1.8.1 and the Spark Connect server on port 15002
+- **spark** — Spark 4.0.1 with Sedona 1.8.1 and the Spark Connect server on port 15002
 - **backend** — ais-backend on port 8080, sharing the `/data` volume with Spark
 
 ### Without Docker
 
-Prerequisites: Java 17, a running Spark Connect server with Sedona.
+Prerequisites: Java 21, a running Spark Connect server with Sedona.
 
 ```bash
 mvn quarkus:dev

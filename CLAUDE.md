@@ -8,7 +8,7 @@ AIS maritime data pipeline: ingest raw AIS data → write GeoParquet → query w
 
 Three modules:
 - **`ais-io`** — ingestion pipeline (fat JAR, Java 21)
-- **`ais-backend`** — REST API (Quarkus 3.32.1, Java 17)
+- **`ais-backend`** — REST API (Quarkus 3.32.1, Java 21)
 - **`ais-frontend`** — map UI (React 18 + OpenLayers 9 + TypeScript)
 
 ## Architecture

@@ -179,12 +179,12 @@ All geometry columns use **WKB encoding** and carry the `geo` file-level metadat
 | NMEA parsing | `dk.tbsalling:aismessages` | 3.0.4 |
 | Geometry (WKB) | `org.locationtech.jts:jts-core` | 1.20.0 |
 | H3 indexing | `com.uber:h3` | 4.1.1 |
-| Parquet writer | `org.apache.parquet:parquet-avro` | 1.14.1 |
-| Hadoop FS | `org.apache.hadoop:hadoop-common` | 3.4.1 |
-| Logging | `ch.qos.logback:logback-classic` | 1.4.14 |
+| Parquet writer | `org.apache.parquet:parquet-avro` | 1.15.2 |
+| Hadoop FS | `org.apache.hadoop:hadoop-common` | 3.4.3 |
+| Logging | `ch.qos.logback:logback-classic` | 1.5.32 |
 | Lombok | `org.projectlombok:lombok` | 1.18.44 |
 
-Java 11+. Built with Maven; the `maven-assembly-plugin` produces a fat JAR at `target/ais-io-*-jar-with-dependencies.jar`.
+Java 21. Built with Maven; the `maven-assembly-plugin` produces a fat JAR at `target/ais-io-*-jar-with-dependencies.jar`.
 
 ## Tests
 
